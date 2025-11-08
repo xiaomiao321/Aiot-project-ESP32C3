@@ -311,6 +311,7 @@ void bootSystem()
     Alarm_Init(); // Initialize Alarm module and start background task
 
     connectWiFi_with_Manager();
+    setupMQTT();
     connectMQTT();
     // 清屏进入主菜单
     tft.fillScreen(TFT_BLACK);

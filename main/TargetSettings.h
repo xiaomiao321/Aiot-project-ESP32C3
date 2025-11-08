@@ -18,19 +18,38 @@ struct ProgressBarInfo {
 
 // --- Public API ---
 
-// Initializes the module, loading data from EEPROM.
+/**
+ * @brief 初始化目标设置模块。
+ * @details 此函数从EEPROM加载倒计时和进度条的设置。如果EEPROM中没有有效数据
+ *          （通过一个“魔术数字”校验），它会加载一组默认值并保存。
+ */
 void TargetSettings_Init();
 
-// Displays the interactive menu for setting the countdown and progress bar.
+/**
+ * @brief 显示并处理目标设置菜单。
+ * @details 提供一个多级菜单，允许用户分别设置倒计时的目标日期时间、
+ *          进度条的开始/结束日期以及进度条的标题。所有更改都会被保存到EEPROM。
+ */
 void TargetSettings_Menu();
 
-// Returns the current countdown target time.
+/**
+ * @brief 获取倒计时目标时间。
+ * @return 返回一个 `time_t` 类型的值，表示倒计时的目标时间戳。
+ */
 time_t getCountdownTarget();
 
-// Returns the current progress bar settings.
+/**
+ * @brief 获取进度条的设置信息。
+ * @return 返回一个对 `ProgressBarInfo` 结构体的常量引用，包含标题、开始和结束时间。
+ */
 const ProgressBarInfo& getProgressBarInfo();
 
-// Draws the countdown and progress bar elements onto a sprite.
+/**
+ * @brief 将目标元素（倒计时和进度条）绘制到TFT sprite上。
+ * @param sprite 指向 `TFT_eSprite` 对象的指针，所有元素将被绘制到这个sprite上。
+ * @details 此函数根据当前时间和已保存的目标设置，计算并绘制剩余时间倒计时
+ *          和一个可视化的进度条，包括百分比和起止日期。
+ */
 void drawTargetElements(TFT_eSprite* sprite);
 
 #endif // TARGETSETTINGS_H

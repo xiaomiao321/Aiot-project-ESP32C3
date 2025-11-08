@@ -175,17 +175,53 @@ typedef struct {
 extern const Song songs[] PROGMEM;
 extern const int numSongs;
 extern volatile bool stopBuzzerTask;
+/**
+ * @brief [FreeRTOS Task] 循环播放音乐的任务。
+ * @param pvParameters 指向要开始播放的歌曲索引（int*）的指针。
+ * @details 此任务根据当前的播放模式（列表循环、单曲循环、随机播放）持续播放音乐库中的歌曲。
+ *          它会处理暂停、停止和模式切换的逻辑。
+ */
 void Buzzer_Task(void *pvParameters);
-void Buzzer_PlayMusic_Task(void *pvParameters);
+
+/**
+ * @brief [FreeRTOS Task] 播放单首音乐的任务。
+ * @param pvParameters 指向要播放的歌曲索引（int*）的指针。
+ * @details 这是一个一次性的播放任务，用于播放指定的单首歌曲，播放完毕后任务会自行删除。
+ *          主要用于如开机音乐、整点报时等短时播放场景。
+ */
 void Buzzer_PlayMusic_Task(void *pvParameters);
 
-// Main menu function
+/**
+ * @brief 初始化蜂鸣器。
+ * @details 将蜂鸣器连接的GPIO引脚设置为输出模式。
+ */
 void Buzzer_Init();
+
+/**
+ * @brief 音乐播放器的主菜单函数。
+ * @details 提供一个交互式菜单，用户可以选择歌曲、播放、暂停、切换播放模式。
+ *          它管理着音乐播放任务和LED灯效任务的生命周期。
+ */
 void BuzzerMenu();
 
-// New functions for direct playback by name
+/**
+ * @brief 通过歌曲名称查找其索引。
+ * @param name 要查找的歌曲的名称。
+ * @return 如果找到，返回歌曲在 `songs` 数组中的索引；如果未找到，返回-1。
+ */
 int findSongIndexByName(const String& name);
+
+/**
+ * @brief 设置当前要播放的歌曲。
+ * @param index 要播放的歌曲在 `songs` 数组中的索引。
+ * @details 此函数用于在调用 `playSpecificSong()` 之前指定歌曲。
+ */
 void setSongToPlay(int index);
+
+/**
+ * @brief 播放由 `setSongToPlay` 指定的歌曲。
+ * @details 启动一个 `Buzzer_PlayMusic_Task` 任务来播放指定的歌曲。
+ */
 void playSpecificSong();
 
 

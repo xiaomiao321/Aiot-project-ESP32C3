@@ -5,7 +5,7 @@
 #include "MQTT.h"
 #include "RotaryEncoder.h"
 #include "Alarm.h"
-
+#include "Buzzer.h"
 // 全局变量
 struct PCData
 {
@@ -30,7 +30,6 @@ struct PCData pcData = { .cpuName = "Unknown",
 char inputBuffer[BUFFER_SIZE];
 uint16_t bufferIndex = 0;
 bool stringComplete = false;
-SemaphoreHandle_t xPCDataMutex = NULL;
 extern TFT_eSPI tft; // 声明外部 TFT 对象
 
 // 图表对象
@@ -99,8 +98,6 @@ void drawPerformanceStaticElements()
 // 更新 PC 数据
 void updatePerformanceData()
 {
-  if (xSemaphoreTake(xPCDataMutex, 10) != pdTRUE) // 互斥信号量
-    return;
   tft.setTextColor(VALUE_COLOR, BG_COLOR);
   tft.setTextFont(1);
   tft.setTextSize(2);
@@ -152,7 +149,6 @@ void updatePerformanceData()
   tft.setTextSize(2);
   tft.drawString(String(esp32c3_temp, 1) + " C", DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT);
 
-  xSemaphoreGive(xPCDataMutex);
 }
 
 // 重置缓冲区
@@ -165,105 +161,136 @@ void resetBuffer()
 // 解析 PC 数据
 void parsePCData()
 {
-  struct PCData newData = { .cpuName = "Unknown",
-                           .gpuName = "Unknown",
-                           .cpuTemp = 0,
-                           .cpuLoad = 0,
-                           .gpuTemp = 0,
-                           .gpuLoad = 0,
-                           .ramLoad = 0.0,
-                           .valid = false };
-  char *ptr = nullptr;
-  ptr = strstr(inputBuffer, "C");
+  struct PCData newData = {
+      .cpuName = "Unknown",
+      .gpuName = "Unknown",
+      .cpuTemp = 0,
+      .cpuLoad = 0,
+      .gpuTemp = 0,
+      .gpuLoad = 0,
+      .ramLoad = 0.0,
+      .valid = false
+  };
+
+  // --- Parse CPU Load from "CCc <load>%" ---
+  char *ptr = strstr(inputBuffer, "CCc ");
   if (ptr)
   {
-    char *degree = strchr(ptr, 'c');
-    char *limit = strchr(ptr, '%');
-    if (degree && limit && degree < limit)
+    char *pct = strchr(ptr, '%');
+    if (pct && pct > ptr + 4)
     {
-      char temp[8] = { 0 }, load[8] = { 0 };
-      strncpy(temp, ptr + 1, degree - ptr - 1);
-      strncpy(load, degree + 2, limit - degree - 2);
-      newData.cpuTemp = atoi(temp);
-      newData.cpuLoad = atoi(load);
+      int len = pct - (ptr + 4);
+      if (len > 0 && len < 8)
+      {
+        char loadStr[8] = { 0 };
+        strncpy(loadStr, ptr + 4, len);
+        newData.cpuLoad = atoi(loadStr);
+        newData.cpuTemp = 0; // unknown
+      }
     }
   }
+
+  // --- Parse GPU from "G<temp>c <load>%" (skip "GPU:") ---
   ptr = strstr(inputBuffer, "G");
-  if (ptr)
+  while (ptr)
   {
-    char *degree = strstr(ptr, "c");
-    char *limit = strchr(ptr, '%');
-    if (degree && limit && degree < limit)
-    {
-      char temp[8] = { 0 }, load[8] = { 0 };
-      strncpy(temp, ptr + 1, degree - ptr - 1);
-      strncpy(load, degree + 2, limit - degree - 2);
-      newData.gpuTemp = atoi(temp);
-      newData.gpuLoad = atoi(load);
+    if (ptr[1] >= '0' && ptr[1] <= '9')
+    { // G followed by digit
+      char *cPos = strchr(ptr, 'c');
+      char *pct = strchr(ptr, '%');
+      if (cPos && pct && cPos < pct)
+      {
+        // Temperature
+        int tempLen = cPos - (ptr + 1);
+        if (tempLen > 0 && tempLen < 8)
+        {
+          char tempStr[8] = { 0 };
+          strncpy(tempStr, ptr + 1, tempLen);
+          newData.gpuTemp = atoi(tempStr);
+        }
+        // Load (skip space after 'c')
+        const char *loadStart = cPos + 1;
+        while (*loadStart == ' ') loadStart++;
+        int loadLen = pct - loadStart;
+        if (loadLen > 0 && loadLen < 8)
+        {
+          char loadStr[8] = { 0 };
+          strncpy(loadStr, loadStart, loadLen);
+          newData.gpuLoad = atoi(loadStr);
+        }
+        break;
+      }
     }
+    ptr = strstr(ptr + 1, "G");
   }
+
+  // --- Parse RAM from "RL<value>|" ---
   ptr = strstr(inputBuffer, "RL");
   if (ptr)
   {
     ptr += 2;
-    char *end = strchr(ptr, '|');
-    if (end)
+    char *bar = strchr(ptr, '|');
+    if (bar)
     {
-      char load[8] = { 0 };
-      strncpy(load, ptr, end - ptr);
-      newData.ramLoad = atof(load);
+      int len = bar - ptr;
+      if (len > 0 && len < 8)
+      {
+        char ramStr[8] = { 0 };
+        strncpy(ramStr, ptr, len);
+        newData.ramLoad = atof(ramStr);
+      }
     }
   }
+
+  // --- Parse CPU Name ---
   ptr = strstr(inputBuffer, "CPU:");
   if (ptr)
   {
     ptr += 4;
     char *end = strstr(ptr, "GPU:");
-    if (!end)
-      end = inputBuffer + strlen(inputBuffer);
-    if (end - ptr < sizeof(newData.cpuName) - 1)
+    if (!end) end = inputBuffer + strlen(inputBuffer);
+    int len = end - ptr;
+    if (len > 0 && len < (int) sizeof(newData.cpuName))
     {
-      strncpy(newData.cpuName, ptr, end - ptr);
-      newData.cpuName[end - ptr] = '\0';
-      for (int i = strlen(newData.cpuName) - 1;
-        i >= 0 && newData.cpuName[i] == ' '; i--)
+      strncpy(newData.cpuName, ptr, len);
+      newData.cpuName[len] = '\0';
+      // Trim trailing spaces
+      for (int i = len - 1; i >= 0 && newData.cpuName[i] == ' '; i--)
         newData.cpuName[i] = '\0';
     }
   }
+
+  // --- Parse GPU Name ---
   ptr = strstr(inputBuffer, "GPU:");
   if (ptr)
   {
     ptr += 4;
     char *end = strchr(ptr, '|');
-    if (!end)
-      end = inputBuffer + strlen(inputBuffer);
-    if (end - ptr < sizeof(newData.gpuName) - 1)
+    if (!end) end = inputBuffer + strlen(inputBuffer);
+    int len = end - ptr;
+    if (len > 0 && len < (int) sizeof(newData.gpuName))
     {
-      strncpy(newData.gpuName, ptr, end - ptr);
-      newData.gpuName[end - ptr] = '\0';
-      for (int i = strlen(newData.gpuName) - 1;
-        i >= 0 && newData.gpuName[i] == ' '; i--)
+      strncpy(newData.gpuName, ptr, len);
+      newData.gpuName[len] = '\0';
+      for (int i = len - 1; i >= 0 && newData.gpuName[i] == ' '; i--)
         newData.gpuName[i] = '\0';
     }
   }
-  if (newData.cpuTemp > 0 || newData.gpuTemp > 0 || newData.ramLoad > 0)
+
+  // Mark as valid if any useful data
+  if (newData.cpuLoad > 0 || newData.gpuTemp > 0 || newData.ramLoad > 0)
   {
     newData.valid = true;
   }
-  if (xSemaphoreTake(xPCDataMutex, portMAX_DELAY) == pdTRUE)
-  {
-    pcData = newData;
-    xSemaphoreGive(xPCDataMutex);
-  }
-  // 临时测试用
-  newData.valid = true;
-  newData.cpuTemp = 50;
-  newData.cpuLoad = 30;
-  newData.gpuTemp = 60;
-  newData.gpuLoad = 70;
-  newData.ramLoad = 45.5;
-}
 
+  // Update global data (no mutex)
+  pcData = newData;
+
+  // 蜂鸣器响一声：1kHz，50ms
+  tone(BUZZER_PIN, 1000);   // 1kHz
+  delay(50);                // 阻塞50ms
+  noTone(BUZZER_PIN);
+}
 // -----------------------------
 // 性能监控初始化任务
 // -----------------------------
@@ -289,6 +316,8 @@ void Performance_Task(void *pvParameters)
 // 串口接收任务
 void SERIAL_Task(void *pvParameters)
 {
+  unsigned long lastCharTime = 0;
+
   for (;;)
   {
     if (Serial.available())
@@ -301,20 +330,33 @@ void SERIAL_Task(void *pvParameters)
       }
       else
       {
+        // Buffer full, reset and add the new character.
         resetBuffer();
+        inputBuffer[bufferIndex++] = inChar;
+        inputBuffer[bufferIndex] = '\0';
       }
-      if (inChar == '\n')
+      lastCharTime = millis(); // Update time of last received character
+
+      // If we receive a newline, the string is complete.
+      if (inChar == '\n' || inChar == '\r')
       {
         stringComplete = true;
       }
     }
+
+    // Timeout logic: if we have received some data, but then there's a pause of 50ms.
+    if (!stringComplete && bufferIndex > 0 && (millis() - lastCharTime > 50)) {
+        stringComplete = true;
+    }
+
     if (stringComplete)
     {
-      parsePCData();
+      parsePCData();       // 解析并触发蜂鸣器
       stringComplete = false;
       resetBuffer();
     }
-    vTaskDelay(pdMS_TO_TICKS(10));
+    
+    vTaskDelay(pdMS_TO_TICKS(10)); // Yield to other tasks
   }
 }
 
@@ -325,7 +367,6 @@ void performanceMenu()
 {
   tft.fillScreen(TFT_BLACK); // 清屏
   drawPerformanceStaticElements();
-  xPCDataMutex = xSemaphoreCreateMutex();
   xTaskCreatePinnedToCore(Performance_Init_Task, "Perf_Init", 8192, NULL, 2, NULL, 0);
   xTaskCreatePinnedToCore(Performance_Task, "Perf_Show", 8192, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(SERIAL_Task, "Serial_Rx", 2048, NULL, 1, NULL, 0);// 创建任务
@@ -336,7 +377,6 @@ void performanceMenu()
       exitSubMenu = false; // Reset flag
       vTaskDelete(xTaskGetHandle("Perf_Show"));
       vTaskDelete(xTaskGetHandle("Serial_Rx"));
-      vSemaphoreDelete(xPCDataMutex);
       break;
     }
     if (g_alarm_is_ringing)
@@ -347,7 +387,6 @@ void performanceMenu()
     {
       vTaskDelete(xTaskGetHandle("Perf_Show"));
       vTaskDelete(xTaskGetHandle("Serial_Rx"));
-      vSemaphoreDelete(xPCDataMutex);
       break;
     }
     vTaskDelay(pdMS_TO_TICKS(10));

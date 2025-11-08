@@ -22,6 +22,6 @@ void setup()
 void loop()
 {
     showMenu();
-    // loopMQTT();
+    loopMQTT();
     vTaskDelay(pdMS_TO_TICKS(15));
 }

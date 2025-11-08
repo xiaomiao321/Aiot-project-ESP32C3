@@ -180,36 +180,91 @@ extern WeatherData g_weather_data;
 extern StockInfo g_stock_data[6];
 extern CurrencyData g_currency_data[6];
 
-// Function declarations
+/**
+ * @brief 初始化网络菜单。
+ * @details 检查WiFi连接状态，连接成功后，会预加载所有API的数据，
+ *          并在屏幕上显示加载状态。
+ */
 void internet_menu_init();
-void internet_menu_loop();
+
+/**
+ * @brief 绘制当前页面的网络数据。
+ * @details 根据全局变量 `g_current_internet_page` 的值，
+ *          将对应API获取并解析好的数据显示在屏幕上。
+ */
 void internet_menu_draw();
+
+/**
+ * @brief 切换到下一页。
+ * @details 将页面索引加一，并使用模运算实现循环切换。
+ */
 void internet_menu_next_page();
+
+/**
+ * @brief 切换到上一页。
+ * @details 将页面索引减一，并使用模运算实现循环切换。
+ */
 void internet_menu_prev_page();
+
+/**
+ * @brief 处理返回按钮事件。
+ * @return 返回 `true`，表示应当退出当前菜单。
+ */
 bool internet_menu_back_press();
+
+/**
+ * @brief 网络信息浏览功能的主入口函数。
+ * @details 负责初始化网络菜单，并进入一个循环，处理用户的旋转和点击输入，
+ *          以实现页面切换、数据刷新和退出菜单等功能。
+ */
 void InternetMenuScreen();
 
-// Individual API fetch functions
+/** @defgroup FetchFunctions API数据获取函数
+ *  @brief 一系列用于从特定API获取数据的函数。
+ *  @{
+ */
+
+/** @brief 获取健康小贴士。 */
 void fetchHealthTip();
-void fetchNews();
+/** @brief 获取GitHub趋势项目。 */
 void fetchGitHubTrending();
+/** @brief 获取历史上的今天事件。 */
 void fetchHistory();
+/** @brief 获取“十万个为什么”条目。 */
 void fetchTenWhy();
+/** @brief 获取在线天气信息。 */
 void fetchonlineweather();
+/** @brief 获取一句土味情话。 */
 void fetchSayLove();
+/** @brief 获取每日英语句子。 */
 void fetchEverydayEnglish();
+/** @brief 获取每日运势。 */
 void fetchFortune();
+/** @brief 获取一首随机诗词。 */
 void fetchShici();
+/** @brief 获取一副对联。 */
 void fetchDuilian();
+/** @brief 获取美元对人民币的汇率。 */
 void fetchFxRate();
+/** @brief 获取一个随机英文单词及其释义。 */
 void fetchRandomEnWord();
+/** @brief 获取一言（Hitokoto）。 */
 void fetchYiyan();
+/** @brief 获取一句励志名言。 */
 void fetchLzmy();
+/** @brief 获取一句优美诗句。 */
 void fetchVerse();
+/** @brief 获取一句与天气相关的诗句。 */
 void fetchTianqishiju();
+/** @brief 获取一句“网抑云”热评。 */
 void fetchHsjz();
+/** @brief 获取一组脑筋急转弯。 */
 void fetchBrainTeaser();
+/** @brief 获取多支股票的近期数据。 */
 void fetchStockData();
+/** @brief 获取多种货币的汇率。 */
 void fetchCurrencyData();
+
+/** @} */
 
 #endif // INTERNET_H

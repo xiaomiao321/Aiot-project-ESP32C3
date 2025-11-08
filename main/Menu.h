@@ -6,14 +6,17 @@
 #include "img.h"
 #include "Internet.h" // Include for the new Internet menu
 
-// Menu item structure
+/**
+ * @brief 主菜单项结构体。
+ * @details 用于定义一个菜单项，包含其名称、图标和被选中时执行的函数。
+ */
 struct MenuItem {
-    const char *name;              // Menu item name
-    const uint16_t *image;         // Menu item image
-    void (*action)();              // Function pointer for the menu action
+    const char *name;              ///< 菜单项显示的名称。
+    const uint16_t *image;         ///< 指向菜单项图标图像数据的指针。
+    void (*action)();              ///< 当菜单项被选中时要调用的函数指针。
 };
 
-// Forward declarations for global variables
+// 全局变量的前向声明
 extern TFT_eSPI tft;
 extern TFT_eSprite menuSprite;
 extern int16_t display;
@@ -22,25 +25,28 @@ extern const MenuItem menuItems[];
 extern const uint8_t MENU_ITEM_COUNT;
 
 
-// Function prototypes for menu logic
+/**
+ * @brief 处理主菜单的导航和交互。
+ * @details 此函数应在主循环中被调用。它负责读取旋转编码器的输入以在菜单项之间切换，
+ *          并检测按钮点击以执行所选菜单项的 `action`。
+ *          它还处理菜单切换时的动画效果。
+ */
 void showMenu();
-void showMenuConfig();
-void animateMenuTransition(const char *title, bool entering);
-void ui_run_easing(int16_t *current, int16_t target, uint8_t steps);
-float easeOutQuad(float t);
 
-// Function prototypes for individual menu screens
-void CountdownMenu();
-void StopwatchMenu();
-void ADCMenu();
-void GamesMenu();
-void AnimationMenu();
-void DS18B20Menu();
-void performanceMenu();
-void weatherMenu();
-void BuzzerMenu();
-void LEDMenu();
-void WatchfaceMenu(); // <-- Added new watchface menu
+/**
+ * @brief 绘制并显示主菜单的初始界面。
+ * @details 该函数负责清空屏幕，并根据当前的选中项和滚动偏移量，
+ *          绘制出所有可见的菜单图标和标题。
+ */
+void showMenuConfig();
+
+/**
+ * @brief 二次缓出缓动函数。
+ * @param t 输入的时间因子，范围从 0.0 到 1.0。
+ * @return 返回经过缓动计算后的值，范围同样在 0.0 到 1.0。
+ *         其效果是开始时快，然后逐渐减速。
+ */
+float easeOutQuad(float t);
 
 #endif // MENU_H
 

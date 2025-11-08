@@ -41,7 +41,7 @@ volatile bool exitSubMenu = false; // Definition for the exit flag
 void callback(char *topic, byte *payload, unsigned int length);
 void reconnect();
 void connectMQTT(); // New function for visual MQTT connection
-
+void sendCommandResponse(char *topic);
 // --- Core Functions ---
 
 void setupMQTT()
@@ -218,4 +218,74 @@ void publishDS18B20SensorData()
   Serial.println("上报数据:");
   Serial.println(jsonBuf);
   Serial.println("MQTT数据上报成功");
+}
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.println("\n收到平台下发消息:");
+  Serial.print("主题: ");
+  Serial.println(topic);
+
+  // 为payload添加结束符
+  payload[length] = '\0';
+  Serial.print("内容: ");
+  Serial.println((char *) payload);
+
+  // 处理命令下发
+  if (strstr(topic, MQTT_TOPIC_COMMANDS))
+  {
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (error)
+    {
+      Serial.println("JSON解析失败");
+      return;
+    }
+
+
+    // 提取request_id用于响应
+    char requestId[100] = { 0 };
+    char *pstr = topic;
+    char *p = requestId;
+    int flag = 0;
+
+    while (*pstr)
+    {
+      if (flag) *p++ = *pstr;
+      if (*pstr == '=') flag = 1;
+      pstr++;
+    }
+    *p = '\0';
+
+    Serial.print("Request ID: ");
+    Serial.println(requestId);
+
+    // 构建响应主题并发送响应
+    char responseTopic[200] = { 0 };
+    strcat(responseTopic, MQTT_TOPIC_CMD_RESPONSE);
+    strcat(responseTopic, requestId);
+
+    sendCommandResponse(responseTopic);
+  }
+  // 处理其他下行消息
+  else if (strstr(topic, MQTT_TOPIC_GET))
+  {
+    Serial.println("收到下行消息，未处理");
+  }
+}
+/**
+ * 发送命令响应到平台
+ */
+void sendCommandResponse(char *topic)
+{
+  if (client.publish(topic, RESPONSE_DATA))
+  {
+    Serial.println("命令响应发送成功");
+  }
+  else
+  {
+    Serial.println("命令响应发送失败");
+  }
+  Serial.println("------------------------");
 }
