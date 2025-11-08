@@ -15,4 +15,5 @@ void connectMQTT(); // New function for visual MQTT connection
 // Keeps the MQTT client running, should be called in the main loop
 void loopMQTT();
 
+
 #endif

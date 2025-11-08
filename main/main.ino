@@ -14,11 +14,14 @@
 
 
 
-void setup() {
+void setup()
+{
     bootSystem();
 }
 
-void loop() {
+void loop()
+{
     showMenu();
+    // loopMQTT();
     vTaskDelay(pdMS_TO_TICKS(15));
 }
