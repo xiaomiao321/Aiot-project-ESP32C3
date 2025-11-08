@@ -178,7 +178,7 @@ void connectMQTT()
       case 5: tftLogError("MQTT_CONNECT_UNAUTHORIZED"); break;
       default: tftLogError("UNKNOWN_ERROR"); break;
       }
-      delay(2000); // Give user time to read error
+      delay(2000);
     }
     attempts++;
   }

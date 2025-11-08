@@ -18,7 +18,7 @@
 #define LOGO_X         5
 #define LOGO_Y_TOP     5
 #define LOGO_Y_BOTTOM  75
-#define BUFFER_SIZE    256
+#define BUFFER_SIZE    512
 
 // Combined Chart Dimensions and Position
 #define COMBINED_CHART_WIDTH    200
