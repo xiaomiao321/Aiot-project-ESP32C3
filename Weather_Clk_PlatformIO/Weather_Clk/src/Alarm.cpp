@@ -67,7 +67,11 @@ static void drawAlarmList() {
     // 显示当前日期和时间
     extern struct tm timeinfo;
     char titleBuf[30];
-    strftime(titleBuf, sizeof(titleBuf), "%Y-%m-%d %H:%M:%S %a", &timeinfo);
+    if (timeinfo.tm_year >= 100) { // Check if time is valid
+        strftime(titleBuf, sizeof(titleBuf), "%Y-%m-%d %H:%M:%S %a", &timeinfo);
+    } else {
+        strcpy(titleBuf, "Time not synced");
+    }
     menuSprite.drawString(titleBuf, 10, 10);
     
     // 如果闹钟数量超过一页，显示翻页指示器
@@ -578,5 +582,40 @@ bool getAlarmInfo(int index, AlarmSetting& settings) {
         return false;
     }
     settings = alarms[index];
+    return true;
+}
+
+/**
+ * @brief 添加或更新一个闹钟。
+ * @param index 要更新的闹钟的索引 (0-9)。如果超出当前闹钟数量，则会添加新闹钟（如果未满）。
+ * @param hour 小时 (0-23)。
+ * @param minute 分钟 (0-59)。
+ * @param days_of_week 星期选择的位掩码 (e.g., 1<<0 for Sunday)。
+ * @param enabled 闹钟是否启用。
+ * @return 如果操作成功，返回true。
+ */
+bool Alarm_Update(int index, uint8_t hour, uint8_t minute, uint8_t days_of_week, bool enabled) {
+    if (index < 0 || index >= MAX_ALARMS) {
+        return false; // 索引超出最大范围
+    }
+    if (hour > 23 || minute > 59) {
+        return false; // 时间无效
+    }
+
+    // 如果索引指向一个新闹钟
+    if (index >= alarm_count) {
+        alarm_count = index + 1; // 更新闹钟数量
+    }
+
+    // 更新闹钟设置
+    alarms[index].hour = hour;
+    alarms[index].minute = minute;
+    alarms[index].days_of_week = days_of_week;
+    alarms[index].enabled = enabled;
+    alarms[index].triggered_today = false; // 重置触发状态
+
+    // 保存到EEPROM
+    saveAlarms();
+
     return true;
 }

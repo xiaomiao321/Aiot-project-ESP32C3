@@ -15,6 +15,7 @@
 // --- 任务句柄 ---
 TaskHandle_t buzzerTaskHandle = NULL; // FreeRTOS中用于控制蜂鸣器播放任务的句柄
 TaskHandle_t ledTaskHandle = NULL;    // FreeRTOS中用于控制LED动画任务的句柄
+static TaskHandle_t backgroundMusicTaskHandle = NULL; // 用于后台播放的独立任务句柄
 
 // --- 播放状态 ---
 PlayMode currentPlayMode = LIST_LOOP; // 当前播放模式，默认为列表循环
@@ -491,6 +492,7 @@ void BuzzerMenu()
       if (readButton()) // 短按按钮
       {
         tone(BUZZER_PIN, 1500, 50);
+        play_song_full_ui(selectedSongIndex); // 调用新的播放函数
         inListMenu = false; // 退出列表，进入播放界面
       }
 
@@ -498,6 +500,29 @@ void BuzzerMenu()
 
       vTaskDelay(pdMS_TO_TICKS(20));
     }
+
+    // The playback logic is now in play_song_full_ui, so this part is no longer needed here.
+    // If play_song_full_ui returns, it means the user long-pressed to exit, so we just loop back to the list menu.
+  }
+}
+
+void play_song_background(int songIndex) {
+    static int currentSongIndex = -1; // 使用静态变量来存储歌曲索引
+    if (songIndex < 0 || songIndex >= numSongs) return;
+
+    // 如果有后台音乐正在播放，先停止它
+    if (backgroundMusicTaskHandle != NULL) {
+        vTaskDelete(backgroundMusicTaskHandle);
+        backgroundMusicTaskHandle = NULL;
+    }
+    
+    currentSongIndex = songIndex;
+    // 创建一个新的后台播放任务
+    xTaskCreate(Buzzer_PlayMusic_Task, "BackgroundMusic", 4096, &currentSongIndex, 1, &backgroundMusicTaskHandle);
+}
+
+void play_song_full_ui(int songIndex) {
+    if (songIndex < 0 || songIndex >= numSongs) return;
 
     // --- 进入播放界面 ---
     stopBuzzerTask = false;
@@ -508,7 +533,7 @@ void BuzzerMenu()
     // 创建播放和灯效任务
     if (buzzerTaskHandle == NULL)
     {
-      xTaskCreatePinnedToCore(Buzzer_Task, "Buzzer_Task", 4096, &selectedSongIndex, 2, &buzzerTaskHandle, 0);
+      xTaskCreatePinnedToCore(Buzzer_Task, "Buzzer_Task", 4096, &songIndex, 2, &buzzerTaskHandle, 0);
     }
     if (ledTaskHandle == NULL)
     {
@@ -516,15 +541,18 @@ void BuzzerMenu()
     }
 
     unsigned long lastScreenUpdateTime = 0;
-    bool inPlayMenu = true;
-    while (inPlayMenu) // 播放界面的循环
+    
+    while (true) // 播放界面的循环
     {
-      if (exitSubMenu || g_alarm_is_ringing) { stop_buzzer_playback(); return; }
+      if (exitSubMenu || g_alarm_is_ringing) { 
+          stop_buzzer_playback(); 
+          return; 
+      }
 
-      if (readButtonLongPress()) // 长按停止播放并返回列表
+      if (readButtonLongPress()) // 长按停止播放并返回
       {
         stop_buzzer_playback();
-        inPlayMenu = false;
+        return;
       }
 
       if (readButton()) // 短按暂停/继续
@@ -550,5 +578,4 @@ void BuzzerMenu()
 
       vTaskDelay(pdMS_TO_TICKS(20));
     }
-  }
 }

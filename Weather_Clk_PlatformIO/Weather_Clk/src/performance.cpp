@@ -5,14 +5,13 @@
 #include "MQTT.h"
 #include "RotaryEncoder.h"
 #include "Buzzer.h"
+#include "freertos/semphr.h"
 
 // --- 全局变量 ---
 
-// 存储从PC接收到的性能数据
-
-
 float esp32c3_temp = 0.0f; // 存储ESP32-C3芯片自身的温度
 struct PCData pcData; // 全局PC数据结构体实例
+SemaphoreHandle_t pcDataMutex; // 用于保护pcData的互斥锁
 
 // 串口接收缓冲区
 char inputBuffer[BUFFER_SIZE];
@@ -51,6 +50,7 @@ void PCData_Init(struct PCData *pcdata)
  */
 void drawPerformanceStaticElements()
 {
+  tft.startWrite();
   tft.fillScreen(BG_COLOR);
   // 绘制NVIDIA和Intel的Logo
   tft.pushImage(LOGO_X, LOGO_Y_TOP, NVIDIA_HEIGHT, NVIDIA_WIDTH, NVIDIA);
@@ -104,6 +104,7 @@ void drawPerformanceStaticElements()
   gpuLoadTrace.startTrace(TFT_BLUE);
   cpuTempTrace.startTrace(TFT_RED);
   gpuTempTrace.startTrace(TFT_ORANGE);
+  tft.endWrite();
 }
 
 /**
@@ -112,48 +113,63 @@ void drawPerformanceStaticElements()
  */
 void updatePerformanceData()
 {
-  tft.setTextColor(VALUE_COLOR, BG_COLOR);
-  tft.setTextFont(1);
-  tft.setTextSize(2);
+    struct PCData localPcData;
 
-  // 清除旧数据并绘制新数据
-  // CPU
-  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-  tft.setTextColor(TFT_GREEN, BG_COLOR);
-  tft.drawString(String(pcData.cpuLoad) + "% " + String(pcData.cpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y);
+    // 使用互斥锁安全地复制共享数据
+    if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t)10) == pdTRUE)
+    {
+        localPcData = pcData;
+        xSemaphoreGive(pcDataMutex);
+    }
+    else
+    {
+        return; 
+    }
 
-  // GPU
-  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-  tft.setTextColor(TFT_BLUE, BG_COLOR);
-  tft.drawString(String(pcData.gpuLoad) + "% " + String(pcData.gpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT);
+    tft.startWrite();
+    tft.setTextColor(VALUE_COLOR, BG_COLOR);
+    tft.setTextFont(1);
+    tft.setTextSize(2);
 
-  // RAM
-  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-  tft.setTextColor(TFT_RED, BG_COLOR);
-  tft.drawString(String(pcData.ramLoad, 1) + "%", DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT);
+    // 清除旧数据并绘制新数据
+    // CPU
+    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+    tft.setTextColor(TFT_GREEN, BG_COLOR);
+    tft.drawString(String(localPcData.cpuLoad) + "% " + String(localPcData.cpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y);
 
-  // ESP32 温度
-  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-  tft.setTextColor(TFT_ORANGE, BG_COLOR);
-  tft.drawString(String(esp32c3_temp, 1) + " C", DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT);
+    // GPU
+    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+    tft.setTextColor(TFT_BLUE, BG_COLOR);
+    tft.drawString(String(localPcData.gpuLoad) + "% " + String(localPcData.gpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT);
 
-  // 更新图表
-  static float gx = 0.0; // 图表X轴当前位置
-  cpuLoadTrace.addPoint(gx, pcData.cpuLoad);
-  gpuLoadTrace.addPoint(gx, pcData.gpuLoad);
-  cpuTempTrace.addPoint(gx, pcData.ramLoad); // 注意：这里绘制的是RAM使用率
-  gpuTempTrace.addPoint(gx, pcData.gpuTemp);
-  gx += 1.0;
-  if (gx > 100.0)
-  { // 如果图表画满了
-    gx = 0.0;
-    combinedChart.drawGraph(COMBINED_CHART_X, COMBINED_CHART_Y); // 重绘图表背景
-    // 重新开始描线
-    cpuLoadTrace.startTrace(TFT_GREEN);
-    gpuLoadTrace.startTrace(TFT_BLUE);
-    cpuTempTrace.startTrace(TFT_RED);
-    gpuTempTrace.startTrace(TFT_ORANGE);
-  }
+    // RAM
+    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+    tft.setTextColor(TFT_RED, BG_COLOR);
+    tft.drawString(String(localPcData.ramLoad, 1) + "%", DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT);
+
+    // ESP32 温度
+    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+    tft.setTextColor(TFT_ORANGE, BG_COLOR);
+    tft.drawString(String(esp32c3_temp, 1) + " C", DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT);
+
+    // 更新图表
+    static float gx = 0.0; // 图表X轴当前位置
+    cpuLoadTrace.addPoint(gx, localPcData.cpuLoad);
+    gpuLoadTrace.addPoint(gx, localPcData.gpuLoad);
+    cpuTempTrace.addPoint(gx, localPcData.ramLoad); // 注意：这里绘制的是RAM使用率
+    gpuTempTrace.addPoint(gx, localPcData.gpuTemp);
+    gx += 1.0;
+    if (gx > 100.0)
+    { // 如果图表画满了
+        gx = 0.0;
+        combinedChart.drawGraph(COMBINED_CHART_X, COMBINED_CHART_Y); // 重绘图表背景
+        // 重新开始描线
+        cpuLoadTrace.startTrace(TFT_GREEN);
+        gpuLoadTrace.startTrace(TFT_BLUE);
+        cpuTempTrace.startTrace(TFT_RED);
+        gpuTempTrace.startTrace(TFT_ORANGE);
+    }
+    tft.endWrite();
 }
 
 /**
@@ -168,50 +184,48 @@ void resetBuffer()
 /**
  * @brief 解析从串口接收到的PC性能数据字符串
  * @details 从特定格式的字符串中提取CPU、GPU、RAM等信息，并填充到全局的pcData结构体中。
- *          例如，从 "CCc 50%" 中解析出CPU负载为50。
  */
 void parsePCData()
 {
-  struct PCData newData;
-  memset(&newData, 0, sizeof(newData)); // 初始化
-  newData.valid = false;
+    struct PCData parsedValues;
+    memset(&parsedValues, 0, sizeof(parsedValues));
+    parsedValues.valid = false;
 
-  char *ptr;
+    char *ptr;
 
-  // 解析CPU负载: "CCc <load>%"
-  ptr = strstr(inputBuffer, "CCc ");
-  if (ptr)
-  {
-    newData.cpuLoad = atoi(ptr + 4);
-  }
+    ptr = strstr(inputBuffer, "CCc ");
+    if (ptr) { parsedValues.cpuLoad = atoi(ptr + 4); }
 
-  // 解析GPU温度和负载: "G<temp>c <load>%"
-  ptr = strstr(inputBuffer, "G");
-  if (ptr && ptr[1] >= '0' && ptr[1] <= '9')
-  {
-    char *cPos = strchr(ptr, 'c');
-    if (cPos)
-    {
-      newData.gpuTemp = atoi(ptr + 1);
-      newData.gpuLoad = atoi(cPos + 1);
+    ptr = strstr(inputBuffer, "G");
+    if (ptr && ptr[1] >= '0' && ptr[1] <= '9') {
+        char *cPos = strchr(ptr, 'c');
+        if (cPos) {
+            parsedValues.gpuTemp = atoi(ptr + 1);
+            parsedValues.gpuLoad = atoi(cPos + 1);
+        }
     }
-  }
 
-  // 解析RAM使用率: "RL<value>|"
-  ptr = strstr(inputBuffer, "RL");
-  if (ptr)
-  {
-    newData.ramLoad = atof(ptr + 2);
-  }
+    ptr = strstr(inputBuffer, "RL");
+    if (ptr) { parsedValues.ramLoad = atof(ptr + 2); }
 
-  // 如果解析到任何有效数据，则标记为有效
-  if (newData.cpuLoad > 0 || newData.gpuTemp > 0 || newData.ramLoad > 0)
-  {
-    newData.valid = true;
-  }
+    if (parsedValues.cpuLoad > 0 || parsedValues.gpuTemp > 0 || parsedValues.ramLoad > 0) {
+        parsedValues.valid = true;
+    }
 
-  pcData = newData; // 更新全局数据
+    // 使用互斥锁安全地更新全局结构体
+    if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t)10) == pdTRUE)
+    {
+        // 仅更新解析出的值，保留固定的名称
+        pcData.cpuLoad = parsedValues.cpuLoad;
+        pcData.cpuTemp = parsedValues.cpuTemp;
+        pcData.gpuLoad = parsedValues.gpuLoad;
+        pcData.gpuTemp = parsedValues.gpuTemp;
+        pcData.ramLoad = parsedValues.ramLoad;
+        pcData.valid = parsedValues.valid;
+        xSemaphoreGive(pcDataMutex);
+    }
 }
+
 
 /**
  * @brief [FreeRTOS Task] 性能监控显示任务
@@ -234,6 +248,7 @@ void Performance_Task(void *pvParameters)
  */
 void SERIAL_Task(void *pvParameters)
 {
+  PCData_Init(&pcData);
   unsigned long lastCharTime = 0;
   for (;;)
   {
@@ -269,6 +284,12 @@ void SERIAL_Task(void *pvParameters)
   }
 }
 
+void startPerformanceMonitoring()
+{
+    pcDataMutex = xSemaphoreCreateMutex();
+    xTaskCreatePinnedToCore(SERIAL_Task, "Serial_Rx", 2048, NULL, 1, NULL, 0);
+}
+
 /**
  * @brief 性能监控菜单的入口函数
  * @details 创建并管理性能显示任务和串口接收任务。处理退出逻辑。
@@ -278,9 +299,8 @@ void performanceMenu()
   tft.fillScreen(TFT_BLACK);
   drawPerformanceStaticElements(); // 绘制静态背景
 
-  // 创建显示任务和串口接收任务
+  // 创建显示任务
   xTaskCreatePinnedToCore(Performance_Task, "Perf_Show", 8192, NULL, 1, NULL, 0);
-  xTaskCreatePinnedToCore(SERIAL_Task, "Serial_Rx", 2048, NULL, 1, NULL, 0);
 
   while (1)
   {
@@ -290,7 +310,6 @@ void performanceMenu()
       exitSubMenu = false;
       // 删除创建的任务以释放资源
       vTaskDelete(xTaskGetHandle("Perf_Show"));
-      vTaskDelete(xTaskGetHandle("Serial_Rx"));
       break; // 退出循环，返回主菜单
     }
     vTaskDelay(pdMS_TO_TICKS(10));

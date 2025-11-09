@@ -272,56 +272,60 @@ void MusicMenuLite() {
             
             if (readButton()) { // 短按进入播放界面
                 tone(BUZZER_PIN, 1500, 50);
+                play_song_lite_ui(selectedSongIndex); // Call the new playback function
                 inListMenu = false;
             }
 
             if (readButtonLongPress()) return; // 长按退出
             vTaskDelay(pdMS_TO_TICKS(20));
         }
+    }
+}
 
-        // --- 播放界面循环 ---
-        stopMusicLiteTask = false;
-        isPaused = false;
-        shared_play_mode = LIST_LOOP;
-        
-        if (musicLiteTaskHandle == NULL) { // 创建播放任务
-            xTaskCreatePinnedToCore(MusicLite_Playback_Task, "MusicLite_Playback_Task", 4096, &selectedSongIndex, 2, &musicLiteTaskHandle, 0);
+void play_song_lite_ui(int songIndex) {
+    if (songIndex < 0 || songIndex >= numSongs) return;
+
+    // --- 播放界面循环 ---
+    stopMusicLiteTask = false;
+    isPaused = false;
+    shared_play_mode = LIST_LOOP;
+    
+    if (musicLiteTaskHandle == NULL) { // 创建播放任务
+        xTaskCreatePinnedToCore(MusicLite_Playback_Task, "MusicLite_Playback_Task", 4096, &songIndex, 2, &musicLiteTaskHandle, 0);
+    }
+
+    unsigned long lastScreenUpdateTime = 0;
+
+    while(true) {
+        if (g_alarm_is_ringing) { stop_lite_playback(); return; }
+
+        if (readButtonLongPress()) { // 长按停止播放并返回
+            stop_lite_playback();
+            return;
         }
 
-        unsigned long lastScreenUpdateTime = 0;
-        bool inPlayMenu = true;
-
-        while(inPlayMenu) {
-            if (g_alarm_is_ringing) { stop_lite_playback(); return; }
-
-            if (readButtonLongPress()) { // 长按停止播放并返回列表
-                stop_lite_playback();
-                inPlayMenu = false;
-            }
-
-            if (readButton()) { // 短按暂停/继续
-                isPaused = !isPaused;
-                tone(BUZZER_PIN, 1000, 50);
-                lastScreenUpdateTime = 0; // 强制刷新屏幕
-            }
-
-            int encoderChange = readEncoder();
-            if (encoderChange != 0) { // 旋转编码器切换播放模式
-                int mode = (int)shared_play_mode;
-                mode = (mode + encoderChange + 3) % 3;
-                shared_play_mode = (PlayMode)mode;
-                tone(BUZZER_PIN, 1200, 50);
-                lastScreenUpdateTime = 0; // 强制刷新屏幕
-            }
-
-            // 定期更新屏幕
-            if (millis() - lastScreenUpdateTime > 200) {
-                uint16_t current_color = song_colors[shared_song_index % num_song_colors];
-                displayPlayingScreen_Lite(current_color);
-                lastScreenUpdateTime = millis();
-            }
-
-            vTaskDelay(pdMS_TO_TICKS(20));
+        if (readButton()) { // 短按暂停/继续
+            isPaused = !isPaused;
+            tone(BUZZER_PIN, 1000, 50);
+            lastScreenUpdateTime = 0; // 强制刷新屏幕
         }
+
+        int encoderChange = readEncoder();
+        if (encoderChange != 0) { // 旋转编码器切换播放模式
+            int mode = (int)shared_play_mode;
+            mode = (mode + encoderChange + 3) % 3;
+            shared_play_mode = (PlayMode)mode;
+            tone(BUZZER_PIN, 1200, 50);
+            lastScreenUpdateTime = 0; // 强制刷新屏幕
+        }
+
+        // 定期更新屏幕
+        if (millis() - lastScreenUpdateTime > 200) {
+            uint16_t current_color = song_colors[shared_song_index % num_song_colors];
+            displayPlayingScreen_Lite(current_color);
+            lastScreenUpdateTime = millis();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

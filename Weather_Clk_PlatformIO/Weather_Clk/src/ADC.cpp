@@ -23,10 +23,11 @@ MeterWidget volts = MeterWidget(&tft);
 static esp_adc_cal_characteristics_t adc1_chars;
 // 标志位，表示ADC校准是否成功启用
 bool cali_enable = false;
-// 标志位，用于通知ADC任务停止运行
-bool stopADCTask = false;
+// 标志位，用于通知ADC显示任务停止运行
+bool stopADCDisplayTask = false;
 // 全局光照强度变量
 float g_lux = 0.0f;
+
 /**
  * @brief 初始化ADC校准
  * @details 检查eFuse中是否有预烧录的校准值。
@@ -72,72 +73,104 @@ void setupADC()
 }
 
 /**
- * @brief [FreeRTOS Task] ADC数据显示任务
+ * @brief [FreeRTOS Task] ADC后台读取任务
  * @param pvParameters 任务创建时传入的参数（未使用）
- * @details 这是一个周期性任务，负责：
+ * @details 这是一个在后台持续运行的周期性任务，负责：
  *          1. 多次采样ADC原始值并取平均，以减少噪声。
- *          2. 将原始值转换为电压值（如果校准成功则使用校准曲线）。
- *          3. 根据电压值计算光敏电阻的阻值，并估算环境光照强度（Lux）。
- *          4. 在屏幕上通过仪表盘、文本和进度条显示电压、ADC原始值和光照强度。
+ *          2. 将原始值转换为电压值。
+ *          3. 根据电压值计算光敏电阻的阻值，并估算环境光照强度（Lux），更新全局变量 g_lux。
  */
 void ADC_Task(void *pvParameters)
 {
-    // 初始化电压表盘控件
-    volts.analogMeter(0, 0, 3.3f, "V", "0", "0.8", "1.6", "2.4", "3.3");
+    const float R_FIXED = 20000.0f;
+    const float R10 = 8000.0f;
+    const float GAMMA = 0.6f;
 
-    // --- 光照强度计算相关常量 ---
-    const float R_FIXED = 20000.0f; // 分压电路中的固定电阻阻值 (20KΩ)
-    const float R10 = 8000.0f;      // 光敏电阻在10 Lux光照下的参考阻值 (8KΩ)
-    const float GAMMA = 0.6f;       // 光敏电阻的GAMMA值，描述其阻值与光照的非线性关系
-
-    // 任务主循环
-    while (!stopADCTask)
-    {
-        // --- 多重采样求平均值 ---
+    for (;;) {
         uint32_t sum = 0;
-        const int samples = 50; // 采样次数
+        const int samples = 50;
         for (int i = 0; i < samples; i++)
         {
             sum += adc1_get_raw(ADC_CHANNEL);
-            delay(1); // 短暂延迟
+            delay(1);
         }
-        sum /= samples; // 计算平均值
+        sum /= samples;
 
-        // --- ADC原始值转电压 ---
         float voltage_v = 0;
         if (cali_enable)
         {
-            // 如果校准成功，使用校准函数将原始值转换为毫伏，再转为伏
             uint32_t voltage_mv = esp_adc_cal_raw_to_voltage(sum, &adc1_chars);
             voltage_v = voltage_mv / 1000.0f;
         }
         else
         {
-            // 如果未校准，使用简单的线性比例关系计算电压
             voltage_v = (sum * 3.3) / 4095.0;
         }
-        // 更新仪表盘指针
-        menuSprite.setTextSize(1);
-        volts.updateNeedle(voltage_v, 0);
 
-        // --- 使用Sprite进行无闪烁更新 ---
-        menuSprite.fillSprite(TFT_BLACK); // 清空Sprite
-        menuSprite.setTextSize(2);
-        menuSprite.setTextFont(1);// 设置字体和大小防止混乱
-        menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
-
-        // --- 计算并显示光照强度(Lux) ---
-        // 根据分压公式计算光敏电阻的实时阻值
         float r_photo = (voltage_v * R_FIXED) / (3.3f - voltage_v);
-        // 根据光敏电阻的特性曲线公式估算光照强度
         g_lux = pow((r_photo / R10), (1.0f / -GAMMA)) * 10.0f;
 
+        vTaskDelay(pdMS_TO_TICKS(500)); // 每500ms更新一次
+    }
+}
+
+/**
+ * @brief 启动ADC后台任务
+ */
+void startADC()
+{
+    xTaskCreatePinnedToCore(ADC_Task, "ADC_Bg_Task", 2048, NULL, 1, NULL, 0);
+}
+
+
+/**
+ * @brief [FreeRTOS Task] ADC数据显示任务
+ * @param pvParameters 任务创建时传入的参数（未使用）
+ * @details 这是一个在ADC菜单激活时运行的周期性任务，负责在屏幕上显示当前的ADC和光照强度信息。
+ */
+void ADC_Display_Task(void *pvParameters)
+{
+    volts.analogMeter(0, 0, 3.3f, "V", "0", "0.8", "1.6", "2.4", "3.3");
+
+    while (!stopADCDisplayTask)
+    {
+        // 直接使用全局变量 g_lux，由后台任务更新
+        float current_lux = g_lux;
+
+        // --- ADC原始值和电压的计算（为了显示，这里需要重新计算） ---
+        uint32_t sum = 0;
+        const int samples = 10; // 显示任务可以减少采样次数
+        for (int i = 0; i < samples; i++)
+        {
+            sum += adc1_get_raw(ADC_CHANNEL);
+            delay(1);
+        }
+        sum /= samples;
+
+        float voltage_v = 0;
+        if (cali_enable)
+        {
+            uint32_t voltage_mv = esp_adc_cal_raw_to_voltage(sum, &adc1_chars);
+            voltage_v = voltage_mv / 1000.0f;
+        }
+        else
+        {
+            voltage_v = (sum * 3.3) / 4095.0;
+        }
+
+        // --- 使用Sprite进行无闪烁更新 ---
+        menuSprite.fillSprite(TFT_BLACK);
+        menuSprite.setTextSize(2);
+        menuSprite.setTextFont(1);
+        menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+        // 显示光照强度
         char luxStr[10];
-        dtostrf(g_lux, 4, 1, luxStr); // 将float转为字符串
+        dtostrf(current_lux, 4, 1, luxStr);
         menuSprite.setCursor(20, 10);
         menuSprite.print("LUX: "); menuSprite.print(luxStr);
 
-        // --- 显示电压和ADC原始值 ---
+        // 显示电压和ADC原始值
         char voltStr[10];
         dtostrf(voltage_v, 4, 2, voltStr);
         menuSprite.setCursor(20, 35);
@@ -146,63 +179,42 @@ void ADC_Task(void *pvParameters)
         menuSprite.setCursor(20, 60);
         menuSprite.print("ADC: "); menuSprite.print(sum);
 
-        // --- 绘制光照强度进度条 ---
-        // 将Lux值限制在0-1000范围内，并映射到0-100的范围用于进度条
-        float constrainedLux = constrain(g_lux, 0.0f, 1000.0f);
-        int barWidth = map((long) constrainedLux, 0L, 100L, 0L, 200L);
-        menuSprite.drawRect(20, 85, 202, 22, TFT_WHITE); // 进度条边框
-        menuSprite.fillRect(21, 86, 200, 20, TFT_BLACK); // 进度条背景
-        menuSprite.fillRect(21, 86, barWidth, 20, TFT_GREEN); // 进度条填充
+        // 绘制光照强度进度条
+        float constrainedLux = constrain(current_lux, 0.0f, 1000.0f);
+        int barWidth = map((long) constrainedLux, 0L, 1000L, 0L, 200L); // 映射范围调整为0-1000
+        menuSprite.drawRect(20, 85, 202, 22, TFT_WHITE);
+        menuSprite.fillRect(21, 86, 200, 20, TFT_BLACK);
+        menuSprite.fillRect(21, 86, barWidth, 20, TFT_GREEN);
 
-        // 将Sprite内容推送到屏幕的指定位置
         menuSprite.pushSprite(0, 130);
 
-        // 任务延迟，控制刷新率
         vTaskDelay(pdMS_TO_TICKS(100));
     }
-    // 任务结束前删除自身
     vTaskDelete(NULL);
 }
+
 
 /**
  * @brief ADC菜单的入口函数
  * @details 此函数负责启动ADC数据显示任务，并处理用户的退出操作。
- *          当用户通过按钮或闹钟等方式退出时，它会设置停止标志并安全地清理任务。
  */
 void ADCMenu()
 {
-    stopADCTask = false; // 重置停止标志
-    tft.fillScreen(TFT_BLACK); // 清屏
+    stopADCDisplayTask = false;
+    tft.fillScreen(TFT_BLACK);
 
-    // 创建并启动ADC任务，固定在核心0上运行
-    xTaskCreatePinnedToCore(ADC_Task, "ADC_Task", 4096, NULL, 1, NULL, 0);
+    // 创建并启动ADC显示任务
+    xTaskCreatePinnedToCore(ADC_Display_Task, "ADC_Display", 4096, NULL, 1, NULL, 0);
 
-    // 循环等待退出信号
     while (1)
     {
-        // 检查全局子菜单退出标志
-        if (exitSubMenu)
+        if (exitSubMenu || g_alarm_is_ringing || readButton())
         {
-            exitSubMenu = false; // 重置标志
-            stopADCTask = true; // 通知ADC任务停止
-            vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
-            break; // 退出循环
+            exitSubMenu = false;
+            stopADCDisplayTask = true;
+            vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务结束
+            break;
         }
-        // 检查全局闹钟响铃标志
-        if (g_alarm_is_ringing)
-        {
-            stopADCTask = true; // 通知ADC任务停止
-            vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
-            break; // 退出循环
-        }
-        // 检查按钮短按事件
-        if (readButton())
-        {
-            stopADCTask = true; // 通知ADC任务停止
-            vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
-            break; // 退出循环
-        }
-        // 短暂延迟，避免CPU空转
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }

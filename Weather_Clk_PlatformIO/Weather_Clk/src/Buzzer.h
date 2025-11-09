@@ -170,5 +170,19 @@ void setSongToPlay(int index);
  */
 void playSpecificSong();
 
+/**
+ * @brief 在后台播放指定的歌曲。
+ * @param songIndex 要播放的歌曲的索引。
+ * @details 此函数会停止任何正在后台播放的歌曲，然后创建一个新任务来播放指定的歌曲。
+ */
+void play_song_background(int songIndex);
+
+/**
+ * @brief 直接进入指定歌曲的完整播放UI。
+ * @param songIndex 要播放的歌曲的索引。
+ * @details 此函数会启动播放任务和灯效任务，并直接显示“正在播放”界面，
+ *          允许用户控制播放，而不是从歌曲列表开始。
+ */
+void play_song_full_ui(int songIndex);
 
 #endif

@@ -62,5 +62,16 @@ int getAlarmCount();
  */
 bool getAlarmInfo(int index, AlarmSetting& settings);
 
+/**
+ * @brief 添加或更新一个闹钟。
+ * @param index 要更新的闹钟的索引 (0-9)。如果超出当前闹钟数量，则会添加新闹钟（如果未满）。
+ * @param hour 小时 (0-23)。
+ * @param minute 分钟 (0-59)。
+ * @param days_of_week 星期选择的位掩码 (e.g., 1<<0 for Sunday)。
+ * @param enabled 闹钟是否启用。
+ * @return 如果操作成功，返回true。
+ */
+bool Alarm_Update(int index, uint8_t hour, uint8_t minute, uint8_t days_of_week, bool enabled);
+
 
 #endif // ALARM_H

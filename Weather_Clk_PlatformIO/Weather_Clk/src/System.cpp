@@ -280,12 +280,16 @@ void bootSystem()
     menuSprite.createSprite(240, 240); // 创建与屏幕同样大小的Sprite
     TargetSettings_Init();
     setupADC();
+    startADC(); // 启动ADC后台读取任务
+    startPerformanceMonitoring(); // 启动性能数据后台接收任务
 
     // 开机动画和自检
     // bootAnimation(); 
 
     Alarm_Init(); // 初始化闹钟模块
     connectWiFi_with_Manager(); // 连接WiFi
+    syncTime();
+    xTaskCreate(TimeUpdate_Task, "Time Update Task", 2048, NULL, 5, NULL);
     setupMQTT(); // 设置MQTT
     connectMQTT(); // 连接MQTT
 

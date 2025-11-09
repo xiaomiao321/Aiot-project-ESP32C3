@@ -10,4 +10,12 @@
  */
 void MusicMenuLite();
 
+/**
+ * @brief 直接进入指定歌曲的精简版播放UI。
+ * @param songIndex 要播放的歌曲的索引。
+ * @details 此函数会启动播放任务并直接显示“正在播放”界面，
+ *          允许用户控制播放，而不是从歌曲列表开始。
+ */
+void play_song_lite_ui(int songIndex);
+
 #endif
