@@ -1,3 +1,4 @@
+// 包含所有必需的头文件
 #include "Buzzer.h"
 #include "Alarm.h"
 #include "RotaryEncoder.h"
@@ -11,23 +12,23 @@
 #include "Alarm.h"
 #include <freertos/task.h>
 
-// --- Task Handles ---
-TaskHandle_t buzzerTaskHandle = NULL;
-TaskHandle_t ledTaskHandle = NULL;
+// --- 任务句柄 ---
+TaskHandle_t buzzerTaskHandle = NULL; // FreeRTOS中用于控制蜂鸣器播放任务的句柄
+TaskHandle_t ledTaskHandle = NULL;    // FreeRTOS中用于控制LED动画任务的句柄
 
-// --- Playback State ---
-PlayMode currentPlayMode = LIST_LOOP;
-volatile bool stopBuzzerTask = false;
-volatile bool isPaused = false;
-volatile bool stopLedTask = false;
+// --- 播放状态 ---
+PlayMode currentPlayMode = LIST_LOOP; // 当前播放模式，默认为列表循环
+volatile bool stopBuzzerTask = false; // 停止蜂鸣器任务的标志，volatile确保多任务环境下的可见性
+volatile bool isPaused = false;       // 暂停状态的标志
+volatile bool stopLedTask = false;    // 停止LED任务的标志
 
-// --- Shared state for UI ---
-static volatile int shared_song_index = 0;
-static volatile int shared_note_index = 0;
-static volatile TickType_t current_note_start_tick = 0;
+// --- 用于UI更新的共享状态 ---
+static volatile int shared_song_index = 0;           // 当前播放歌曲在列表中的索引
+static volatile int shared_note_index = 0;           // 当前歌曲中正在播放的音符索引
+static volatile TickType_t current_note_start_tick = 0; // 当前音符开始播放的系统时间点（tick）
 
-// --- Song Data ---
-
+// --- 歌曲数据 ---
+// PROGMEM关键字将大型数据结构（如歌曲）存储在闪存中，以节省宝贵的RAM
 const Song songs[] PROGMEM = {
   { "Ai Ni", melody_ai_ni, durations_ai_ni, sizeof(melody_ai_ni) / sizeof(melody_ai_ni[0]), 0 },
   { "Ai Qing Xun Xi", melody_ai_qing_xun_xi, durations_ai_qing_xun_xi, sizeof(melody_ai_qing_xun_xi) / sizeof(melody_ai_qing_xun_xi[0]), 0 },
@@ -118,73 +119,92 @@ const Song songs[] PROGMEM = {
   { "Zui Hou Yi Ye", melody_zui_hou_yi_ye, durations_zui_hou_yi_ye, sizeof(melody_zui_hou_yi_ye) / sizeof(melody_zui_hou_yi_ye[0]), 3 },
   { "Windows XP", melody_windows, durations_windows, sizeof(melody_windows) / sizeof(melody_windows[0]), 3 }
 };
-const int numSongs = sizeof(songs) / sizeof(songs[0]);
+const int numSongs = sizeof(songs) / sizeof(songs[0]); // 计算歌曲总数
 
-// --- UI State ---
-int selectedSongIndex = 0;
-int displayOffset = 0;
-const int visibleSongs = 3;
+// --- UI状态 ---
+int selectedSongIndex = 0;  // 在歌曲列表中当前选中的歌曲索引
+int displayOffset = 0;      // 列表的滚动偏移量，用于实现翻页效果
+const int visibleSongs = 3; // 屏幕上一次可见的歌曲数量
 
-// --- Forward Declarations ---
-static void stop_buzzer_playback();
+// --- 函数前向声明 ---
+static void stop_buzzer_playback(); // 声明一个静态函数，用于停止所有播放相关的活动
 
-// --- Helper Functions ---
+/**
+ * @brief 计算指定歌曲的总时长（毫秒）
+ * @param songIndex 歌曲的索引
+ * @return 返回歌曲的总时长（毫秒）
+ */
 static uint32_t calculateSongDuration_ms(int songIndex)
 {
-  if (songIndex < 0 || songIndex >= numSongs) return 0;
+  if (songIndex < 0 || songIndex >= numSongs) return 0; // 边界检查
   Song song;
-  memcpy_P(&song, &songs[songIndex], sizeof(Song));
+  memcpy_P(&song, &songs[songIndex], sizeof(Song)); // 从PROGMEM中复制歌曲数据到RAM
   uint32_t total_ms = 0;
+  // 遍历歌曲的所有音符，累加它们的时长
   for (int i = 0; i < song.length; i++)
   {
-    total_ms += pgm_read_word(song.durations + i);
+    total_ms += pgm_read_word(song.durations + i); // pgm_read_word用于从PROGMEM读取数据
   }
   return total_ms;
 }
 
+/**
+ * @brief 计算当前歌曲已播放的时长（毫秒）
+ * @return 返回已播放的时长（毫秒）
+ */
 static uint32_t calculateElapsedTime_ms()
 {
-  if (shared_song_index < 0 || shared_song_index >= numSongs) return 0;
+  if (shared_song_index < 0 || shared_song_index >= numSongs) return 0; // 边界检查
   Song song;
   memcpy_P(&song, &songs[shared_song_index], sizeof(Song));
   uint32_t elapsed_ms = 0;
+  // 累加已播放音符的总时长
   for (int i = 0; i < shared_note_index; i++)
   {
     elapsed_ms += pgm_read_word(song.durations + i);
   }
+  // 加上当前正在播放的音符所经过的时间
   TickType_t current_note_elapsed_ticks = xTaskGetTickCount() - current_note_start_tick;
-  elapsed_ms += (current_note_elapsed_ticks * 1000) / configTICK_RATE_HZ;
+  elapsed_ms += (current_note_elapsed_ticks * 1000) / configTICK_RATE_HZ; // 将ticks转换为毫秒
   return elapsed_ms;
 }
 
-// --- UI Drawing ---
+/**
+ * @brief 在屏幕上绘制歌曲列表
+ * @param selectedIndex 当前选中的歌曲索引，用于高亮显示
+ */
 void displaySongList(int selectedIndex)
 {
-  menuSprite.fillScreen(TFT_BLACK);
+  menuSprite.fillScreen(TFT_BLACK); // 清空sprite以进行重绘
   menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
   menuSprite.setTextSize(2);
-  menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
-  menuSprite.setTextDatum(MC_DATUM);
-  menuSprite.drawString("Music Menu", 120, 28);
+  menuSprite.setTextDatum(MC_DATUM); // 设置文本对齐方式为中中对齐
+  menuSprite.drawString("Music Menu", 120, 28); // 绘制标题
+
+  // 显示当前选中的索引和总数 (例如 "3/90")
   char index_buf[20];
-  sprintf(index_buf, "%d/%d", selectedIndex + 1, numSongs);  // +1 是为了让索引从1开始显示
-  menuSprite.setTextDatum(MR_DATUM);  // 右上对齐，方便放在标题右边
+  sprintf(index_buf, "%d/%d", selectedIndex + 1, numSongs);
+  menuSprite.setTextDatum(MR_DATUM); // 右中对齐
   menuSprite.setTextSize(1);
-  menuSprite.drawString(index_buf, 230, 28);  // x=230 靠右，与左边标题对称
-  menuSprite.setTextDatum(MC_DATUM);
+  menuSprite.drawString(index_buf, 230, 28);
+  menuSprite.setTextDatum(MC_DATUM); // 恢复默认对齐
+
+  // 循环绘制可见的歌曲条目
   for (int i = 0; i < visibleSongs; i++)
   {
     int songIdx = displayOffset + i;
-    if (songIdx >= numSongs) break;
-    int yPos = 60 + i * 50;
-    if (songIdx == selectedIndex)
+    if (songIdx >= numSongs) break; // 如果超出歌曲总数则停止
+    int yPos = 60 + i * 50; // 计算每个条目的Y坐标
+
+    if (songIdx == selectedIndex) // 如果是当前选中的歌曲
     {
+      // 绘制蓝色圆角矩形作为高亮背景
       menuSprite.fillRoundRect(10, yPos - 18, 220, 36, 5, 0x001F);
       menuSprite.setTextSize(2);
-      menuSprite.setTextColor(TFT_WHITE, 0x001F);
+      menuSprite.setTextColor(TFT_WHITE, 0x001F); // 设置文本颜色和背景色
       menuSprite.drawString(songs[songIdx].name, 120, yPos);
     }
-    else
+    else // 对于未选中的歌曲
     {
       menuSprite.fillRoundRect(10, yPos - 18, 220, 36, 5, TFT_BLACK);
       menuSprite.setTextSize(1);
@@ -192,22 +212,27 @@ void displaySongList(int selectedIndex)
       menuSprite.drawString(songs[songIdx].name, 120, yPos);
     }
   }
-  menuSprite.setTextDatum(TL_DATUM);
-  menuSprite.pushSprite(0, 0);
+  menuSprite.setTextDatum(TL_DATUM); // 恢复左上角对齐
+  menuSprite.pushSprite(0, 0); // 将sprite内容推送到屏幕
 }
 
+/**
+ * @brief 绘制正在播放歌曲的界面
+ */
 void displayPlayingSong()
 {
-  uint32_t elapsed_ms = calculateElapsedTime_ms();
-  uint32_t total_ms = calculateSongDuration_ms(shared_song_index);
+  uint32_t elapsed_ms = calculateElapsedTime_ms(); // 获取已播放时间
+  uint32_t total_ms = calculateSongDuration_ms(shared_song_index); // 获取总时间
 
   menuSprite.fillScreen(TFT_BLACK);
   menuSprite.setTextDatum(MC_DATUM);
   menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
+  // 显示歌曲名称
   menuSprite.setTextSize(2);
   menuSprite.drawString(songs[shared_song_index].name, 120, 20);
 
+  // 显示当前时间
   extern struct tm timeinfo;
   if (getLocalTime(&timeinfo, 0))
   {
@@ -217,11 +242,11 @@ void displayPlayingSong()
     menuSprite.drawString(timeStr, 120, 50);
   }
 
-  // Display Play/Pause status
+  // 显示播放/暂停状态
   String status_text = isPaused ? "Paused" : "Playing";
   menuSprite.drawString(status_text, 120, 80);
 
-  // Display Play Mode below status
+  // 显示播放模式
   String mode_text;
   switch (currentPlayMode)
   {
@@ -229,19 +254,18 @@ void displayPlayingSong()
   case LIST_LOOP:   mode_text = "List Loop"; break;
   case RANDOM_PLAY: mode_text = "Random"; break;
   }
-  menuSprite.setTextSize(1); // Use smaller text for the mode
+  menuSprite.setTextSize(1);
   menuSprite.drawString(mode_text, 120, 100);
-  menuSprite.setTextSize(2); // Reset text size
+  menuSprite.setTextSize(2); // 恢复字体大小
 
-  // --- Time-domain song visualization ---
+  // --- 时域歌曲可视化 ---
   Song current_song;
   memcpy_P(&current_song, &songs[shared_song_index], sizeof(Song));
 
   if (current_song.length > 0)
   {
-    // Find min (non-zero) and max frequency for scaling
-    int min_freq = 10000;
-    int max_freq = 0;
+    // 查找最小和最大频率用于归一化
+    int min_freq = 10000, max_freq = 0;
     for (int i = 0; i < current_song.length; i++)
     {
       int freq = pgm_read_word(current_song.melody + i);
@@ -251,55 +275,45 @@ void displayPlayingSong()
         if (freq > max_freq) max_freq = freq;
       }
     }
-    // Handle songs with no audible notes or a single note
-    if (min_freq > max_freq) { min_freq = 200; max_freq = 2000; }
-    if (min_freq == max_freq) { min_freq = max_freq / 2; }
+    if (min_freq > max_freq) { min_freq = 200; max_freq = 2000; } // 处理无有效音符的情况
+    if (min_freq == max_freq) { min_freq = max_freq / 2; } // 处理只有一个音符的情况
 
-    // Drawing parameters
-    const int graph_x = 10;
-    const int graph_y_bottom = 180;
-    const int graph_area_width = 220;
-    const int max_bar_height = 75;
-    const int min_bar_height = 2;
+    // 绘图参数
+    const int graph_x = 10, graph_y_bottom = 180, graph_area_width = 220;
+    const int max_bar_height = 75, min_bar_height = 2;
 
     float step = (float) graph_area_width / current_song.length;
-    int bar_width = (step > 1.0f) ? floor(step * 0.8f) : 1; // 80% of space, or 1px minimum
+    int bar_width = (step > 1.0f) ? floor(step * 0.8f) : 1;
     if (bar_width == 0) bar_width = 1;
 
+    // 绘制每个音符的柱状图
     for (int i = 0; i < current_song.length; i++)
     {
       int freq = pgm_read_word(current_song.melody + i);
-      int bar_height = 0;
-      if (freq > 0)
-      {
-        bar_height = map(freq, min_freq, max_freq, min_bar_height, max_bar_height);
-      }
+      int bar_height = (freq > 0) ? map(freq, min_freq, max_freq, min_bar_height, max_bar_height) : 0;
 
       if (bar_height > 0)
       {
-        uint16_t color = (i <= shared_note_index) ? TFT_CYAN : TFT_DARKGREY;
+        uint16_t color = (i <= shared_note_index) ? TFT_CYAN : TFT_DARKGREY; // 已播放的为青色，未播放的为灰色
         int x_pos = graph_x + floor(i * step);
         menuSprite.fillRect(x_pos, graph_y_bottom - bar_height, bar_width, bar_height, color);
       }
     }
   }
 
-  int progressWidth = 0;
-  if (total_ms > 0)
-  {
-    progressWidth = (elapsed_ms * 220) / total_ms;
-    if (progressWidth > 220) progressWidth = 220;
-  }
+  // 绘制播放进度条
+  int progressWidth = (total_ms > 0) ? (elapsed_ms * 220) / total_ms : 0;
+  if (progressWidth > 220) progressWidth = 220;
   menuSprite.drawRoundRect(10, 185, 220, 10, 5, TFT_WHITE);
   menuSprite.fillRoundRect(10, 185, progressWidth, 10, 5, TFT_WHITE);
 
+  // 显示时间文本 (例如 "01:23 / 03:45")
   char time_buf[20];
   snprintf(time_buf, sizeof(time_buf), "%02d:%02d / %02d:%02d", elapsed_ms / 60000, (elapsed_ms / 1000) % 60, total_ms / 60000, (total_ms / 1000) % 60);
   menuSprite.drawString(time_buf, 120, 210);
 
-  // --- Current Note Info ---
-  int current_freq = 0;
-  int current_dur = 0;
+  // 显示当前音符信息
+  int current_freq = 0, current_dur = 0;
   if (!isPaused && shared_note_index < current_song.length)
   {
     current_freq = pgm_read_word(current_song.melody + shared_note_index);
@@ -307,97 +321,103 @@ void displayPlayingSong()
   }
   char note_info[30];
   snprintf(note_info, sizeof(note_info), "Note: %d Hz, %d ms", current_freq, current_dur);
-  menuSprite.setTextSize(1); // Use smaller text
+  menuSprite.setTextSize(1);
   menuSprite.drawString(note_info, 120, 228);
 
   menuSprite.pushSprite(0, 0);
 }
 
-// --- Tasks ---
+/**
+ * @brief NeoPixel LED彩虹效果的辅助函数
+ * @param WheelPos 色轮上的位置 (0-255)
+ * @return 返回计算出的32位颜色值
+ */
 uint32_t Wheel(byte WheelPos)
 {
   WheelPos = 255 - WheelPos;
-  if (WheelPos < 85)
-  {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  }
-  if (WheelPos < 170)
-  {
-    WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
+  if (WheelPos < 85) return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  if (WheelPos < 170) { WheelPos -= 85; return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3); }
   WheelPos -= 170;
   return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
+/**
+ * @brief [FreeRTOS Task] LED彩虹灯效任务
+ * @param pvParameters 未使用
+ */
 void Led_Rainbow_Task(void *pvParameters)
 {
   for (uint16_t j = 0; ; j++)
   {
-    if (stopLedTask)
+    if (stopLedTask) // 检查停止标志
     {
-      strip.clear();
+      strip.clear(); // 清除灯带
       strip.show();
-      vTaskDelete(NULL);
+      vTaskDelete(NULL); // 删除任务
     }
     for (uint16_t i = 0; i < strip.numPixels(); i++)
     {
       strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
     }
     strip.show();
-    vTaskDelay(pdMS_TO_TICKS(20));
+    vTaskDelay(pdMS_TO_TICKS(20)); // 任务延时，控制动画速度
   }
 }
 
+/**
+ * @brief [FreeRTOS Task] 蜂鸣器音乐播放任务
+ * @param pvParameters 指向要播放的歌曲索引的指针
+ */
 void Buzzer_Task(void *pvParameters)
 {
   int songIdx = *(int *) pvParameters;
-  for (;;)
+  for (;;) // 无限循环以支持不同的播放模式
   {
-    shared_song_index = songIdx;
+    shared_song_index = songIdx; // 更新全局共享的歌曲索引
     Song song;
     memcpy_P(&song, &songs[songIdx], sizeof(Song));
+
+    // 遍历并播放当前歌曲的每个音符
     for (int i = 0; i < song.length; i++)
     {
       shared_note_index = i;
       current_note_start_tick = xTaskGetTickCount();
-      if (stopBuzzerTask)
+
+      if (stopBuzzerTask) { noTone(BUZZER_PIN); vTaskDelete(NULL); } // 检查停止标志
+
+      while (isPaused) // 如果暂停，则在此循环等待
       {
         noTone(BUZZER_PIN);
-        vTaskDelete(NULL);
-      }
-      while (isPaused)
-      {
-        noTone(BUZZER_PIN);
-        current_note_start_tick = xTaskGetTickCount();
+        current_note_start_tick = xTaskGetTickCount(); // 重置音符开始时间，避免进度条跳跃
         vTaskDelay(pdMS_TO_TICKS(50));
       }
+
       int note = pgm_read_word(song.melody + i);
       int duration = pgm_read_word(song.durations + i);
-      if (note > 0)
-      {
-        tone(BUZZER_PIN, note, duration);
-      }
-      vTaskDelay(pdMS_TO_TICKS(duration));
+      if (note > 0) tone(BUZZER_PIN, note, duration); // 播放音符
+      vTaskDelay(pdMS_TO_TICKS(duration)); // 等待音符时长
     }
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    if (currentPlayMode == SINGLE_LOOP) {}
-    else if (currentPlayMode == LIST_LOOP)
-    {
-      songIdx = (songIdx + 1) % numSongs;
-    }
-    else if (currentPlayMode == RANDOM_PLAY)
+
+    vTaskDelay(pdMS_TO_TICKS(2000)); // 歌曲结束后暂停2秒
+
+    // 根据播放模式决定下一首歌曲
+    if (currentPlayMode == SINGLE_LOOP) {} // 单曲循环，不做任何事
+    else if (currentPlayMode == LIST_LOOP) songIdx = (songIdx + 1) % numSongs; // 列表循环
+    else if (currentPlayMode == RANDOM_PLAY) // 随机播放
     {
       if (numSongs > 1)
       {
         int currentSong = songIdx;
-        do { songIdx = random(numSongs); } while (songIdx == currentSong);
+        do { songIdx = random(numSongs); } while (songIdx == currentSong); // 确保下一首和当前不同
       }
     }
   }
 }
 
-// This is the restored task for background music (e.g., boot, chime)
+/**
+ * @brief [FreeRTOS Task] 用于播放背景音乐（如开机音乐、提示音）的简化任务
+ * @param pvParameters 指向要播放的歌曲索引的指针
+ */
 void Buzzer_PlayMusic_Task(void *pvParameters)
 {
   int songIndex = *(int *) pvParameters;
@@ -406,101 +426,86 @@ void Buzzer_PlayMusic_Task(void *pvParameters)
 
   for (int i = 0; i < song.length; i++)
   {
-    if (stopBuzzerTask)
-    { // Check the global stop flag
-      noTone(BUZZER_PIN);
-      vTaskDelete(NULL);
-      return;
-    }
+    if (stopBuzzerTask) { noTone(BUZZER_PIN); vTaskDelete(NULL); return; }
 
     int note = pgm_read_word(song.melody + i);
     int duration = pgm_read_word(song.durations + i);
-
-    if (note > 0)
-    {
-      tone(BUZZER_PIN, note, duration);
-    }
-
+    if (note > 0) tone(BUZZER_PIN, note, duration);
     vTaskDelay(pdMS_TO_TICKS(duration));
   }
-
-  vTaskDelete(NULL); // Self-delete when done
+  vTaskDelete(NULL); // 播放完毕后自删除
 }
 
-// --- Main Menu Function ---
+/**
+ * @brief 初始化蜂鸣器引脚
+ */
 void Buzzer_Init() { pinMode(BUZZER_PIN, OUTPUT); }
 
+/**
+ * @brief 停止所有与音乐播放相关的任务和硬件
+ */
 static void stop_buzzer_playback()
 {
+  // 删除任务
   if (buzzerTaskHandle != NULL) { vTaskDelete(buzzerTaskHandle); buzzerTaskHandle = NULL; }
   if (ledTaskHandle != NULL) { vTaskDelete(ledTaskHandle); ledTaskHandle = NULL; }
+  // 停止硬件
   noTone(BUZZER_PIN);
   strip.clear();
   strip.show();
+  // 重置状态标志
   isPaused = false;
   stopBuzzerTask = false;
   stopLedTask = false;
 }
 
+/**
+ * @brief 音乐播放器的主菜单函数
+ */
 void BuzzerMenu()
 {
   selectedSongIndex = 0;
   displayOffset = 0;
   isPaused = false;
 
-  // 主循环，允许在播放界面和列表界面之间切换
-  while (1)
+  while (1) // 主循环，在歌曲列表和播放界面间切换
   {
-    // 显示歌曲列表
-    displaySongList(selectedSongIndex);
+    displaySongList(selectedSongIndex); // 首先显示歌曲列表
 
-    // 在歌曲列表界面中的循环
     bool inListMenu = true;
-    while (inListMenu)
+    while (inListMenu) // 歌曲列表界面的循环
     {
-      if (exitSubMenu || g_alarm_is_ringing)
-      {
-        stop_buzzer_playback();
-        return;
-      }
+      if (exitSubMenu || g_alarm_is_ringing) { stop_buzzer_playback(); return; } // 检查全局退出条件
 
-      int encoderChange = readEncoder();
+      int encoderChange = readEncoder(); // 读取编码器输入
       if (encoderChange != 0)
       {
         selectedSongIndex = (selectedSongIndex + encoderChange + numSongs) % numSongs;
-        if (selectedSongIndex < displayOffset)
-        {
-          displayOffset = selectedSongIndex;
-        }
-        else if (selectedSongIndex >= displayOffset + visibleSongs)
-        {
-          displayOffset = selectedSongIndex - visibleSongs + 1;
-        }
+        // 调整列表滚动偏移
+        if (selectedSongIndex < displayOffset) displayOffset = selectedSongIndex;
+        else if (selectedSongIndex >= displayOffset + visibleSongs) displayOffset = selectedSongIndex - visibleSongs + 1;
         displaySongList(selectedSongIndex);
-        tone(BUZZER_PIN, 1000, 50);
+        tone(BUZZER_PIN, 1000, 50); // 提示音
       }
 
-      if (readButton())
+      if (readButton()) // 短按按钮
       {
         tone(BUZZER_PIN, 1500, 50);
-        inListMenu = false; // 退出列表界面，进入播放界面
+        inListMenu = false; // 退出列表，进入播放界面
       }
 
-      if (readButtonLongPress())
-      {
-        return; // 长按直接返回主菜单
-      }
+      if (readButtonLongPress()) return; // 长按直接返回上级菜单
 
       vTaskDelay(pdMS_TO_TICKS(20));
     }
 
-    // 开始播放选中的歌曲
+    // --- 进入播放界面 ---
     stopBuzzerTask = false;
     stopLedTask = false;
     isPaused = false;
-    currentPlayMode = LIST_LOOP;
+    currentPlayMode = LIST_LOOP; // 默认播放模式
 
-    // 创建播放任务
+    // 创建播放和灯效任务
     if (buzzerTaskHandle == NULL)
     {
       xTaskCreatePinnedToCore(Buzzer_Task, "Buzzer_Task", 4096, &selectedSongIndex, 2, &buzzerTaskHandle, 0);
@@ -511,41 +516,32 @@ void BuzzerMenu()
     }
 
     unsigned long lastScreenUpdateTime = 0;
-
-    // 在播放界面中的循环
     bool inPlayMenu = true;
-    while (inPlayMenu)
+    while (inPlayMenu) // 播放界面的循环
     {
-      if (exitSubMenu || g_alarm_is_ringing)
-      {
-        stop_buzzer_playback();
-        return;
-      }
+      if (exitSubMenu || g_alarm_is_ringing) { stop_buzzer_playback(); return; }
 
-      if (readButtonLongPress())
+      if (readButtonLongPress()) // 长按停止播放并返回列表
       {
-        // 长按停止播放并返回列表界面
         stop_buzzer_playback();
         inPlayMenu = false;
       }
 
-      if (readButton())
+      if (readButton()) // 短按暂停/继续
       {
-        // 短按暂停/继续播放
         isPaused = !isPaused;
         tone(BUZZER_PIN, 1000, 50);
       }
 
       int encoderChange = readEncoder();
-      if (encoderChange != 0)
+      if (encoderChange != 0) // 旋转编码器切换播放模式
       {
-        // 旋转编码器切换播放模式
         int mode = (int) currentPlayMode;
         mode = (mode + encoderChange + 3) % 3;
         currentPlayMode = (PlayMode) mode;
       }
 
-      // 更新显示
+      // 定期更新屏幕
       if (millis() - lastScreenUpdateTime > 100)
       {
         displayPlayingSong();

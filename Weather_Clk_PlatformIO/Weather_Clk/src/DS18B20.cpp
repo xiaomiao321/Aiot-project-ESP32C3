@@ -1,3 +1,4 @@
+// 包含所有必需的头文件
 #include "DS18B20.h"
 #include "Alarm.h"
 #include <TFT_eSPI.h>
@@ -7,218 +8,238 @@
 #include <DallasTemperature.h>
 #include "Menu.h"
 #include "RotaryEncoder.h"
-#include "Alarm.h"
 #include "weather.h"
-#include "MQTT.h"
-// Graph dimensions and position
-#define TEMP_GRAPH_WIDTH  200
-#define TEMP_GRAPH_HEIGHT 135
-#define TEMP_GRAPH_X      20
-#define TEMP_GRAPH_Y      90 
 
-// Temperature display position
+// --- 图表尺寸和位置定义 ---
+#define TEMP_GRAPH_WIDTH  200 // 图表宽度
+#define TEMP_GRAPH_HEIGHT 135 // 图表高度
+#define TEMP_GRAPH_X      20  // 图表左上角X坐标
+#define TEMP_GRAPH_Y      90  // 图表左上角Y坐标
+
+// --- 温度值显示位置 ---
 #define TEMP_VALUE_X      20
 #define TEMP_VALUE_Y      20
 
-// Status message position
+// --- 状态消息位置 ---
 #define STATUS_MESSAGE_X  10
-#define STATUS_MESSAGE_Y  230 // Adjust this to be below the graph
+#define STATUS_MESSAGE_Y  230 // 调整到图表下方
 
+// --- DS18B20传感器引脚定义 ---
 #define DS18B20_PIN 10
 
+// --- 库对象实例化 ---
+OneWire oneWire(DS18B20_PIN); // 创建OneWire实例
+DallasTemperature sensors(&oneWire); // 将OneWire实例传递给DallasTemperature库
 
-OneWire oneWire(DS18B20_PIN);
-DallasTemperature sensors(&oneWire);
+// --- 全局变量 ---
+float g_currentTemperature = -127.0; // 全局变量，存储当前温度值。-127.0为设备断开时的特殊值。
+volatile bool stopDS18B20Task = false; // 停止DS18B20任务的标志，volatile确保多任务可见性
 
-float g_currentTemperature = -127.0;
-bool stopDS18B20Task = false;
+// --- TFT_eWidget 图表和描线对象 ---
+GraphWidget gr = GraphWidget(&tft); // 图表控件
+TraceWidget tr = TraceWidget(&gr);  // 描线控件
 
-GraphWidget gr = GraphWidget(&tft);
-TraceWidget tr = TraceWidget(&gr);
-
+/**
+ * @brief 初始化DS18B20传感器
+ */
 void DS18B20_Init()
 {
-  sensors.begin();
+  sensors.begin(); // 启动DallasTemperature库
 }
 
+/**
+ * @brief [FreeRTOS Task] 后台更新温度任务
+ * @param pvParameters 未使用
+ * @details 此任务在后台运行，每2秒请求一次温度读数，并更新全局温度变量 `g_currentTemperature`。
+ *          这样可以确保主显示任务总能获取到较新的温度数据，而无需自己进行耗时的查询。
+ */
 void updateTempTask(void *pvParameters)
 {
   while (1)
   {
-    sensors.requestTemperatures();
-    float temp = sensors.getTempCByIndex(0);
-    if (temp != DEVICE_DISCONNECTED_C)
+    sensors.requestTemperatures(); // 发送命令以获取温度
+    float temp = sensors.getTempCByIndex(0); // 从第一个传感器获取摄氏温度
+    if (temp != DEVICE_DISCONNECTED_C) // DEVICE_DISCONNECTED_C 是库定义的错误码
     {
-      g_currentTemperature = temp;
+      g_currentTemperature = temp; // 更新全局温度值
     }
-    vTaskDelay(pdMS_TO_TICKS(2000)); // Update every 2 seconds
+    vTaskDelay(pdMS_TO_TICKS(2000)); // 任务延时2秒
   }
 }
 
+/**
+ * @brief 创建后台温度更新任务
+ */
 void createDS18B20Task()
 {
   xTaskCreate(
     updateTempTask,
     "DS18B20 Update Task",
-    1024,
-    NULL,
-    1,
-    NULL
+    1024, // 任务堆栈大小
+    NULL, // 任务参数
+    1,    // 任务优先级
+    NULL  // 任务句柄
   );
 }
 
+/**
+ * @brief 获取当前DS18B20温度值
+ * @return 返回全局变量中存储的最新温度值
+ */
 float getDS18B20Temp()
 {
   return g_currentTemperature;
 }
 
+/**
+ * @brief [FreeRTOS Task] DS18B20数据显示主任务
+ * @param pvParameters 未使用
+ * @details 此任务负责在屏幕上绘制温度曲线图和实时温度值。
+ *          它会初始化图表，然后在一个循环中不断获取温度数据，更新屏幕显示，
+ *          并将数据点添加到图表中形成曲线。
+ */
 void DS18B20_Task(void *pvParameters)
 {
-  float lastTemp = -274;
-  float gx = 0.0;
+  float lastTemp = -274; // 上一次的温度值，用于比较
+  float gx = 0.0; // 图表X轴的当前位置
 
-  gr.createGraph(TEMP_GRAPH_WIDTH, TEMP_GRAPH_HEIGHT, tft.color565(5, 5, 5));
-  gr.setGraphScale(0.0, 100.0, 0.0, 40.0); // X-axis 0-100, Y-axis 0-40 (temperature range)
-  gr.setGraphGrid(0.0, 25.0, 0.0, 10.0, TFT_DARKGREY); // Grid every 25 on X, 10 on Y
-  gr.drawGraph(TEMP_GRAPH_X, TEMP_GRAPH_Y);
-  tr.startTrace(TFT_YELLOW);
+  // --- 初始化图表 ---
+  gr.createGraph(TEMP_GRAPH_WIDTH, TEMP_GRAPH_HEIGHT, tft.color565(5, 5, 5)); // 创建图表背景
+  gr.setGraphScale(0.0, 100.0, 0.0, 40.0); // 设置X轴(0-100)和Y轴(0-40°C)的范围
+  gr.setGraphGrid(0.0, 25.0, 0.0, 10.0, TFT_DARKGREY); // 设置网格线
+  gr.drawGraph(TEMP_GRAPH_X, TEMP_GRAPH_Y); // 绘制图表框架
+  tr.startTrace(TFT_YELLOW); // 开始以黄色描绘曲线
 
-  // Draw Y-axis labels
-  tft.setTextFont(1); // Set font to 1
-  tft.setTextSize(1); // Set text size for axis labels
-  tft.setTextDatum(MR_DATUM); // Middle-Right datum
-  tft.setTextColor(TFT_WHITE, tft.color565(5, 5, 5)); // Set text color for axis labels
-  tft.drawNumber(40, gr.getPointX(0.0) - 5, gr.getPointY(40.0));
-  tft.drawNumber(30, gr.getPointX(0.0) - 5, gr.getPointY(30.0));
-  tft.drawNumber(20, gr.getPointX(0.0) - 5, gr.getPointY(20.0));
-  tft.drawNumber(10, gr.getPointX(0.0) - 5, gr.getPointY(10.0));
-  tft.drawNumber(0, gr.getPointX(0.0) - 5, gr.getPointY(0.0));
+  // --- 绘制坐标轴标签 ---
+  tft.setTextFont(1);
+  tft.setTextSize(1);
+  tft.setTextDatum(MR_DATUM); // 中右对齐
+  tft.setTextColor(TFT_WHITE, tft.color565(5, 5, 5));
+  // 绘制Y轴标签 (40, 30, 20, 10, 0)
+  for (int i = 40; i >= 0; i -= 10)
+  {
+    tft.drawNumber(i, gr.getPointX(0.0) - 5, gr.getPointY(i));
+  }
 
-  // Draw X-axis labels
-  tft.setTextDatum(TC_DATUM); // Top-Center datum
-  tft.drawNumber(0, gr.getPointX(0.0), gr.getPointY(0.0) + 5);
-  tft.drawNumber(25, gr.getPointX(25.0), gr.getPointY(0.0) + 5);
-  tft.drawNumber(50, gr.getPointX(50.0), gr.getPointY(0.0) + 5);
-  tft.drawNumber(75, gr.getPointX(75.0), gr.getPointY(0.0) + 5);
-  tft.drawNumber(100, gr.getPointX(100.0), gr.getPointY(0.0) + 5);
+  tft.setTextDatum(TC_DATUM); // 上中对齐
+  // 绘制X轴标签 (0, 25, 50, 75, 100)
+  for (int i = 0; i <= 100; i += 25)
+  {
+    tft.drawNumber(i, gr.getPointX(i), gr.getPointY(0.0) + 5);
+  }
 
+  // --- 主循环 ---
   while (1)
   {
-    if (stopDS18B20Task)
+    if (stopDS18B20Task) break; // 检查退出标志
+
+    float tempC = getDS18B20Temp(); // 获取最新温度
+
+    if (tempC != DEVICE_DISCONNECTED_C && tempC > -50 && tempC < 150) // 检查温度值是否有效
     {
-      break;
-    }
+      tft.fillRect(0, 0, tft.width(), TEMP_GRAPH_Y - 5, TFT_BLACK); // 清除图表上方的区域
 
-    float tempC = getDS18B20Temp();
-
-    if (tempC != DEVICE_DISCONNECTED_C && tempC > -50 && tempC < 150)
-    {
-      tft.fillRect(0, 0, tft.width(), TEMP_GRAPH_Y - 5, TFT_BLACK); // Clear area above graph
-
-      // Display current time at the top
-      if (!getLocalTime(&timeinfo, 1))
+      // 在顶部显示当前时间
+      if (getLocalTime(&timeinfo, 1))
       {
-        // Handle error or display placeholder
-      }
-      else
-      {
-        char time_str[30]; // Increased buffer size
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S %a", &timeinfo); // New format
-        tft.setTextFont(2); // Smaller font for time
+        char time_str[30];
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S %a", &timeinfo);
+        tft.setTextFont(2);
         tft.setTextSize(1);
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.setTextDatum(MC_DATUM); // Center align
-        tft.drawString(time_str, tft.width() / 2, 10); // Position at top center
-        tft.setTextDatum(TL_DATUM); // Reset datum
+        tft.setTextDatum(MC_DATUM);
+        tft.drawString(time_str, tft.width() / 2, 10);
+        tft.setTextDatum(TL_DATUM);
       }
 
+      // --- 显示实时温度值 ---
       char tempStr[10];
-      dtostrf(tempC, 4, 2, tempStr);
-
-      tft.setTextFont(7); // Set font to 7
-      tft.setTextSize(1); // Set size to 1
-
-      // Calculate position to center the text
-      // Need to combine tempStr and " C" for accurate width calculation
+      dtostrf(tempC, 4, 2, tempStr); // 将float转为字符串
       char fullTempStr[15];
       sprintf(fullTempStr, "%s C", tempStr);
 
+      tft.setTextFont(7); // 使用大号字体
+      tft.setTextSize(1);
       int text_width = tft.textWidth(fullTempStr);
       int text_height = tft.fontHeight();
       int x_pos = (tft.width() - text_width) / 2;
-      // Adjust y_pos to account for the time display at the top
-      int y_pos = (TEMP_GRAPH_Y - 5 - text_height) / 2 + 20; // Shift down by ~20 pixels for time
+      int y_pos = (TEMP_GRAPH_Y - 5 - text_height) / 2 + 20; // 计算Y坐标，使其在时间下方居中
 
-      tft.setTextDatum(TL_DATUM); // Set to Top-Left for precise positioning
-      tft.setTextColor(TFT_WHITE, TFT_BLACK); // Ensure text color is white on black background
+      tft.setTextDatum(TL_DATUM);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
       tft.drawString(fullTempStr, x_pos, y_pos);
 
-      tr.addPoint(gx, tempC - 0.5);
-      tr.addPoint(gx, tempC);
-      tr.addPoint(gx, tempC + 0.5);
-      gx += 1.0;
+      // --- 向图表添加数据点 ---
+      tr.addPoint(gx, tempC); // 添加当前温度点
+      gx += 1.0; // X轴步进
 
+      // 如果图表画满了，则重置
       if (gx > 100.0)
       {
         gx = 0.0;
-        gr.drawGraph(TEMP_GRAPH_X, TEMP_GRAPH_Y);
-        tr.startTrace(TFT_YELLOW);
+        gr.drawGraph(TEMP_GRAPH_X, TEMP_GRAPH_Y); // 重绘图表背景
+        tr.startTrace(TFT_YELLOW); // 重新开始描线
       }
 
       lastTemp = tempC;
-      publishDS18B20SensorData(tempC);
     }
-    else
+    else // 如果传感器读取错误
     {
       if (stopDS18B20Task) break;
-
-      tft.fillRect(0, 0, tft.width(), tft.height(), TFT_BLACK); // Clear entire screen on error
+      tft.fillScreen(TFT_BLACK); // 清屏
       tft.setCursor(10, 30);
       tft.setTextSize(2);
       tft.setTextColor(TFT_RED);
       tft.println("Sensor Error!");
     }
 
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(500)); // 每500ms更新一次屏幕
   }
 
-  vTaskDelete(NULL);
+  vTaskDelete(NULL); // 任务结束时自我删除
 }
 
+/**
+ * @brief DS18B20温度显示功能的菜单入口函数
+ * @details 此函数负责启动DS18B20的显示任务，并处理用户的退出操作。
+ *          当用户通过按钮、闹钟或全局退出标志请求退出时，它会设置停止标志并安全地清理任务。
+ */
 void DS18B20Menu()
 {
-  stopDS18B20Task = false;
+  stopDS18B20Task = false; // 重置停止标志
+  tft.fillScreen(TFT_BLACK); // 清屏
 
-  tft.fillScreen(TFT_BLACK);
-
+  // 创建并启动DS18B20显示任务，固定在核心0上运行
   xTaskCreatePinnedToCore(DS18B20_Task, "DS18B20_Task", 4096, NULL, 1, NULL, 0);
 
+  // 循环等待退出信号
   while (1)
   {
     if (exitSubMenu)
     {
-      exitSubMenu = false; // Reset flag
-      stopDS18B20Task = true;
-      vTaskDelay(pdMS_TO_TICKS(150)); // Wait for task to stop
-      break;
+      exitSubMenu = false; // 重置标志
+      stopDS18B20Task = true; // 通知任务停止
+      vTaskDelay(pdMS_TO_TICKS(150)); // 等待任务处理停止信号
+      break; // 退出循环
     }
     if (g_alarm_is_ringing)
-    { // ADDED LINE
-      stopDS18B20Task = true; // Signal task to stop
-      vTaskDelay(pdMS_TO_TICKS(150)); // Give task time to stop
-      break; // Exit loop
+    {
+      stopDS18B20Task = true; // 通知任务停止
+      vTaskDelay(pdMS_TO_TICKS(150)); // 等待任务处理停止信号
+      break; // 退出循环
     }
     if (readButton())
     {
-      stopDS18B20Task = true;
+      stopDS18B20Task = true; // 通知任务停止
+      // 等待任务确认删除
       TaskHandle_t task = xTaskGetHandle("DS18B20_Task");
       for (int i = 0; i < 150 && task != NULL; i++)
       {
         if (eTaskGetState(task) == eDeleted) break;
         vTaskDelay(pdMS_TO_TICKS(10));
       }
-      break;
+      break; // 退出循环
     }
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(10)); // 短暂延迟，避免CPU空转
   }
 }

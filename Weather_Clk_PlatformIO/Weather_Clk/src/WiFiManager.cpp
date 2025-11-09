@@ -14,13 +14,13 @@ DNSServer dnsServer;
 Preferences preferences;
 
 // --- Variables ---
-const char* ap_ssid = "WeatherClock_Setup";
+const char *ap_ssid = "WeatherClock_Setup";
 
 // =====================================================================================
 //                                     HTML PAGE
 // =====================================================================================
 
-const char* wifi_manager_html = R"rawliteral(
+const char *wifi_manager_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -61,11 +61,13 @@ const char* wifi_manager_html = R"rawliteral(
 //                                 WEB SERVER HANDLERS
 // =====================================================================================
 
-void handleRoot() {
+void handleRoot()
+{
     // Scan for WiFi networks
     String wifi_list_options = "";
     int n = WiFi.scanNetworks();
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i)
+    {
         wifi_list_options += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")</option>";
     }
 
@@ -74,7 +76,8 @@ void handleRoot() {
     server.send(200, "text/html", html);
 }
 
-void handleSave() {
+void handleSave()
+{
     tftClearLog();
     tftLog("Web page submitted.", TFT_WHITE);
 
@@ -96,14 +99,15 @@ void handleSave() {
     menuSprite.setTextDatum(MC_DATUM);
     menuSprite.drawString("Credentials Saved!", 120, 80);
     menuSprite.drawString("Rebooting...", 120, 120);
-    menuSprite.pushSprite(0,0);
+    menuSprite.pushSprite(0, 0);
 
     server.send(200, "text/plain", "Credentials saved. The device will now reboot and try to connect.");
     delay(2000);
     ESP.restart();
 }
 
-void handleNotFound(){
+void handleNotFound()
+{
     server.send(302, "text/plain", "http://192.168.4.1"); // Redirect to the root page
 }
 
@@ -111,9 +115,13 @@ void handleNotFound(){
 //                                     MAIN FUNCTION
 // =====================================================================================
 
-bool connectWiFi_with_Manager() {
+bool connectWiFi_with_Manager()
+{
     // If already connected, do nothing.
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        Serial.println("DNS 1: " + WiFi.dnsIP(0).toString());
+        Serial.println("DNS 2: " + WiFi.dnsIP(1).toString());
         return true;
     }
     tft.fillScreen(TFT_BLACK);
@@ -125,7 +133,8 @@ bool connectWiFi_with_Manager() {
     preferences.end();
 
     // --- Try to connect with saved credentials ---
-    if (saved_ssid.length() > 0) {
+    if (saved_ssid.length() > 0)
+    {
         tftLog("Found saved network:", TFT_WHITE);
         tftLog(saved_ssid.c_str(), TFT_CYAN);
         tftLog("Connecting...", TFT_WHITE);
@@ -135,27 +144,31 @@ bool connectWiFi_with_Manager() {
         WiFi.persistent(true);
         WiFi.setSleep(false);
         WiFi.setTxPower(WIFI_POWER_19_5dBm);
+
         WiFi.begin(saved_ssid.c_str(), saved_pass.c_str());
         tftLog("WiFi.begin() called", TFT_YELLOW);
         int attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 10) {
-            tftLog("attempt " + String(attempts+1) + " of 10", TFT_WHITE); // 5 second timeout
-            delay(500);
+        while (WiFi.status() != WL_CONNECTED && attempts < 10)
+        {
+            tftLog("attempt " + String(attempts + 1) + " of 10", TFT_WHITE); // 5 second timeout
+            delay(2000);
             attempts++;
         }
 
-        if (WiFi.status() == WL_CONNECTED) {
+        if (WiFi.status() == WL_CONNECTED)
+        {
             tftLog("Connection SUCCESS!", TFT_GREEN);
             delay(1500);
             return true; // Success
         }
-        
+
         tftLog("Connection FAILED.", TFT_RED);
         tftLog("Trying fallback method...", TFT_YELLOW);
         delay(2000);
 
         // Call the fallback function from weather.cpp
-        if (connectWiFi()) {
+        if (connectWiFi())
+        {
             // Fallback connection was successful
             tftClearLog();
             tftLog("Fallback SUCCESS!", TFT_GREEN);
@@ -167,7 +180,9 @@ bool connectWiFi_with_Manager() {
         tftLog("Fallback FAILED.", TFT_RED);
         delay(2000);
 
-    } else {
+    }
+    else
+    {
         tftLog("No saved network found.", TFT_YELLOW);
         delay(1500);
     }
@@ -195,7 +210,8 @@ bool connectWiFi_with_Manager() {
     Serial.println("Config portal running.");
 
     // Loop to handle web requests
-    while(true) {
+    while (true)
+    {
         dnsServer.processNextRequest();
         server.handleClient();
         vTaskDelay(pdMS_TO_TICKS(10));

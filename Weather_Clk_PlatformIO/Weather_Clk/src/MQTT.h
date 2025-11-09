@@ -2,7 +2,7 @@
 #define MQTT_H
 
 #include <Arduino.h>
-
+#include "performance.h"
 
 extern volatile void (*requestedMenuAction)();
 extern volatile bool exitSubMenu; // 这两个都是之前想法用到的，现在不需要了，但是在很多地方引用了，于是保留在这里
@@ -36,10 +36,12 @@ void connectMQTT();
 void loopMQTT();
 
 /**
- * @brief 发布DS18B20传感器的温度数据。
- * @details 此函数从DS18B20温度传感器读取当前的温度值，
- *          然后将此数据封装成JSON格式，并通过MQTT发布到预设的主题上。
+ *@brief 向华为云发布数据
+ *
+ * @param Temp DS18B20温度数据
+ * @param pcdata 电脑信息数据
+ * @param lux 光照强度数据
  */
-void publishDS18B20SensorData(float Temp);
+void publishData(float Temp, struct PCData *pcdata, float lux);
 
 #endif

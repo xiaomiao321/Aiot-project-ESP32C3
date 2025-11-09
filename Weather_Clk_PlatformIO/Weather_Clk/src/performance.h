@@ -47,6 +47,18 @@
 #define ARC_CPU_COLOR TFT_GREEN
 #define ARC_GPU_COLOR TFT_BLUE
 
+
+struct PCData
+{
+    char cpuName[64];
+    char gpuName[64];
+    int cpuTemp;
+    int cpuLoad;
+    int gpuTemp;
+    int gpuLoad;
+    float ramLoad;
+    bool valid; // 数据是否有效
+};
 // -----------------------------
 // 函数声明
 // -----------------------------
@@ -97,7 +109,7 @@ void parsePCData();
 /**
  * @brief [FreeRTOS Task] 性能监控界面的初始化任务。
  * @param pvParameters 任务创建时传入的参数（未使用）。
- * @details 这是一个一次性执行的FreeRTOS任务，调用 `drawPerformanceStaticElements()` 
+ * @details 这是一个一次性执行的FreeRTOS任务，调用 `drawPerformanceStaticElements()`
  *          函数来完成界面的静态布局绘制，任务完成后将自行删除。
  */
 void Performance_Init_Task(void *pvParameters);
@@ -114,7 +126,7 @@ void Performance_Task(void *pvParameters);
  * @brief [FreeRTOS Task] 串口数据接收任务。
  * @param pvParameters 任务创建时传入的参数（未使用）。
  * @details 这是一个持续运行的FreeRTOS任务，负责监听并从串口读取数据。
- *          当接收到完整的一行数据（以换行符结尾）时，它会调用 `parsePCData()` 
+ *          当接收到完整的一行数据（以换行符结尾）时，它会调用 `parsePCData()`
  *          函数进行数据解析，然后重置缓冲区。
  */
 void SERIAL_Task(void *pvParameters);

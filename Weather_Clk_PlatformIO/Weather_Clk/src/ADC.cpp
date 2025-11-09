@@ -25,7 +25,8 @@ static esp_adc_cal_characteristics_t adc1_chars;
 bool cali_enable = false;
 // 标志位，用于通知ADC任务停止运行
 bool stopADCTask = false;
-
+// 全局光照强度变量
+float g_lux = 0.0f;
 /**
  * @brief 初始化ADC校准
  * @details 检查eFuse中是否有预烧录的校准值。
@@ -129,10 +130,10 @@ void ADC_Task(void *pvParameters)
         // 根据分压公式计算光敏电阻的实时阻值
         float r_photo = (voltage_v * R_FIXED) / (3.3f - voltage_v);
         // 根据光敏电阻的特性曲线公式估算光照强度
-        float lux = pow((r_photo / R10), (1.0f / -GAMMA)) * 10.0f;
+        g_lux = pow((r_photo / R10), (1.0f / -GAMMA)) * 10.0f;
 
         char luxStr[10];
-        dtostrf(lux, 4, 1, luxStr); // 将float转为字符串
+        dtostrf(g_lux, 4, 1, luxStr); // 将float转为字符串
         menuSprite.setCursor(20, 10);
         menuSprite.print("LUX: "); menuSprite.print(luxStr);
 
@@ -147,7 +148,7 @@ void ADC_Task(void *pvParameters)
 
         // --- 绘制光照强度进度条 ---
         // 将Lux值限制在0-1000范围内，并映射到0-100的范围用于进度条
-        float constrainedLux = constrain(lux, 0.0f, 1000.0f);
+        float constrainedLux = constrain(g_lux, 0.0f, 1000.0f);
         int barWidth = map((long) constrainedLux, 0L, 100L, 0L, 200L);
         menuSprite.drawRect(20, 85, 202, 22, TFT_WHITE); // 进度条边框
         menuSprite.fillRect(21, 86, 200, 20, TFT_BLACK); // 进度条背景

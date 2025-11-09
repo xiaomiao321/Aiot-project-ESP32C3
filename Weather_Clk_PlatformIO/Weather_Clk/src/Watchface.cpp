@@ -58,7 +58,8 @@ static void PlaceholderWatchface();
 static void VectorScrollWatchface_SEG();
 static void VectorScanWatchface_SEG();
 
-struct WatchfaceItem {
+struct WatchfaceItem
+{
     const char *name;
     void (*show)();
 };
@@ -88,7 +89,8 @@ const int WATCHFACE_COUNT = sizeof(watchfaceItems) / sizeof(watchfaceItems[0]);
 // --- Pagination for Watchface Menu ---
 const int VISIBLE_WATCHFACES = 5; // Number of watchfaces to display at once
 
-static void displayWatchfaceList(int selectedIndex, int displayOffset) {
+static void displayWatchfaceList(int selectedIndex, int displayOffset)
+{
     menuSprite.fillSprite(TFT_BLACK);
     menuSprite.setTextFont(MENU_FONT);
     menuSprite.setTextDatum(MC_DATUM);
@@ -96,7 +98,8 @@ static void displayWatchfaceList(int selectedIndex, int displayOffset) {
     menuSprite.setTextSize(2);
     menuSprite.drawString("Select Watchface", tft.width() / 2, 20);
 
-    for (int i = 0; i < VISIBLE_WATCHFACES; i++) {
+    for (int i = 0; i < VISIBLE_WATCHFACES; i++)
+    {
         int itemIndex = displayOffset + i;
         if (itemIndex >= WATCHFACE_COUNT) break;
 
@@ -107,7 +110,8 @@ static void displayWatchfaceList(int selectedIndex, int displayOffset) {
     menuSprite.pushSprite(0, 0);
 }
 
-void WatchfaceMenu() {
+void WatchfaceMenu()
+{
     int selectedIndex = 0;
     int displayOffset = 0;
     unsigned long lastClickTime = 0;
@@ -115,38 +119,47 @@ void WatchfaceMenu() {
 
     displayWatchfaceList(selectedIndex, displayOffset);
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
             return; // Exit WatchfaceMenu
         }
         if (g_alarm_is_ringing) { return; } // ADDED LINE
 
-        if (readButtonLongPress()) { 
+        if (readButtonLongPress())
+        {
             tone(BUZZER_PIN, 1500, 100);
-            return; 
+            return;
         }
 
         int encoderChange = readEncoder();
-        if (encoderChange != 0) {
+        if (encoderChange != 0)
+        {
             selectedIndex = (selectedIndex + encoderChange + WATCHFACE_COUNT) % WATCHFACE_COUNT;
-            
-            if (selectedIndex < displayOffset) {
+
+            if (selectedIndex < displayOffset)
+            {
                 displayOffset = selectedIndex;
-            } else if (selectedIndex >= displayOffset + VISIBLE_WATCHFACES) {
+            }
+            else if (selectedIndex >= displayOffset + VISIBLE_WATCHFACES)
+            {
                 displayOffset = selectedIndex - VISIBLE_WATCHFACES + 1;
             }
             displayWatchfaceList(selectedIndex, displayOffset);
             tone(BUZZER_PIN, 1000, 50);
         }
 
-        if (readButton()) {
+        if (readButton())
+        {
             if (millis() - lastClickTime < 300) { showMenuConfig(); return; }
             lastClickTime = millis();
             singleClick = true;
         }
 
-        if (singleClick && (millis() - lastClickTime > 300)) {
+        if (singleClick && (millis() - lastClickTime > 300))
+        {
             singleClick = false;
             tone(BUZZER_PIN, 2000, 50);
             watchfaceItems[selectedIndex].show();
@@ -170,9 +183,11 @@ timeDate_s *timeDate = &g_watchface_timeDate;
 
 static uint32_t util_seed = 1;
 void util_randomSeed(uint32_t newSeed) { util_seed = newSeed; }
-long util_random(long max) {
+long util_random(long max)
+{
     static bool seeded = false;
-    if (!seeded) {
+    if (!seeded)
+    {
         // 组合多种时间源
         unsigned long seed = millis() + micros();
         randomSeed(seed);
@@ -182,10 +197,11 @@ long util_random(long max) {
 }
 long util_random_range(long min, long max) { return min + util_random(max - min); }
 
-void draw_char(int16_t x, int16_t y, char c, uint16_t color, uint16_t bg, uint8_t size) {
+void draw_char(int16_t x, int16_t y, char c, uint16_t color, uint16_t bg, uint8_t size)
+{
     menuSprite.setTextSize(size);
     menuSprite.setTextColor(color, bg);
-    char str[2] = {c, '\0'};
+    char str[2] = { c, '\0' };
     menuSprite.drawString(str, x, y);
 }
 
@@ -196,14 +212,16 @@ static int g_lastChimeSecond = -1;
 static TaskHandle_t g_hourlyMusicTaskHandle = NULL;
 static int g_hourlySongIndex = 0;
 
-static void handleHourlyChime() {
+static void handleHourlyChime()
+{
     static unsigned long lastChimeCheck = 0;
     static unsigned long lastBeepTime = 0;
     static bool waitingForMusic = false;
 
     // This function will be called frequently from watchface loops.
     // We only run the logic once per second.
-    if (millis() - lastChimeCheck < 1000) {
+    if (millis() - lastChimeCheck < 1000)
+    {
         return;
     }
     lastChimeCheck = millis();
@@ -211,18 +229,22 @@ static void handleHourlyChime() {
     getLocalTime(&timeinfo);
 
     // Check if the music task has finished on its own
-    if (g_hourlyMusicTaskHandle != NULL && eTaskGetState(g_hourlyMusicTaskHandle) == eDeleted) {
+    if (g_hourlyMusicTaskHandle != NULL && eTaskGetState(g_hourlyMusicTaskHandle) == eDeleted)
+    {
         g_hourlyMusicTaskHandle = NULL;
     }
 
     // 检查是否在等待播放音乐的状态
-    if (waitingForMusic) {
-        if (millis() - lastBeepTime >= 3000) {
+    if (waitingForMusic)
+    {
+        if (millis() - lastBeepTime >= 3000)
+        {
             // 2秒延迟结束，播放音乐
             // tone(BUZZER_PIN, 2500, 150); // Final, highest pitch beep
 
             // If a song is already playing, stop it before starting a new one
-            if (g_hourlyMusicTaskHandle != NULL) {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
             }
 
@@ -231,7 +253,7 @@ static void handleHourlyChime() {
             g_hourlySongIndex = timeinfo.tm_hour % numSongs;
             stopBuzzerTask = false; // Reset stop flag
             xTaskCreatePinnedToCore(Buzzer_PlayMusic_Task, "Buzzer_Music_Task", 8192, &g_hourlySongIndex, 1, &g_hourlyMusicTaskHandle, 0);
-            
+
             waitingForMusic = false; // 重置状态
         }
         g_lastChimeSecond = timeinfo.tm_sec;
@@ -239,21 +261,26 @@ static void handleHourlyChime() {
     }
 
     // Sequence from 59:55 to 59:59
-    if (timeinfo.tm_min == 59 && timeinfo.tm_sec >= 55) {
-        if (g_lastChimeSecond != timeinfo.tm_sec) {
+    if (timeinfo.tm_min == 59 && timeinfo.tm_sec >= 55)
+    {
+        if (g_lastChimeSecond != timeinfo.tm_sec)
+        {
             int freq = 1000;
             tone(BUZZER_PIN, freq, 100);
             g_lastChimeSecond = timeinfo.tm_sec;
-            
+
         }
-    } 
+    }
     // 原来的整点触发逻辑现在由 waitingForMusic 状态处理
-    else if (timeinfo.tm_min == 0 && timeinfo.tm_sec == 0) {
+    else if (timeinfo.tm_min == 0 && timeinfo.tm_sec == 0)
+    {
         tone(BUZZER_PIN, 3000, 1000);
         waitingForMusic = true;
         lastBeepTime = millis(); // 记录最后一次蜂鸣的时间
         g_lastChimeSecond = timeinfo.tm_sec;
-    } else {
+    }
+    else
+    {
         // Reset for next hour
         g_lastChimeSecond = -1;
         waitingForMusic = false; // 确保不在等待状态
@@ -268,8 +295,10 @@ static unsigned long lastSyncMillis_Time = 0;
 const unsigned long syncInterval_Weather = WEATHER_INTERVAL_MIN * 60 * 1000; // 30 minutes
 const unsigned long syncInterval_Time = TIME_INTERVAL_MIN * 60 * 1000; // 360 minutes
 
-static void handlePeriodicSync() {
-    if (millis() - lastSyncMillis_Weather > syncInterval_Weather) {
+static void handlePeriodicSync()
+{
+    if (millis() - lastSyncMillis_Weather > syncInterval_Weather)
+    {
         silentFetchWeather();
         lastSyncMillis_Weather = millis();
     }
@@ -280,7 +309,8 @@ static void handlePeriodicSync() {
     }
 }
 
-static void drawCommonElements() {
+static void drawCommonElements()
+{
     menuSprite.setTextFont(1);
     // Weather (top right)
     menuSprite.setTextDatum(TR_DATUM);
@@ -293,10 +323,13 @@ static void drawCommonElements() {
     // Assuming reporttime is a string like "YYYY-MM-DD HH:MM:SS"
     // Extract the last 8 characters (HH:MM:SS)
     int len = strlen(reporttime);
-    if (len >= 8) {
+    if (len >= 8)
+    {
         strncpy(reportTimeOnlyStr, reporttime + len - 8, 8);
         reportTimeOnlyStr[8] = '\0';
-    } else {
+    }
+    else
+    {
         // Handle cases where reporttime is shorter than expected
         strncpy(reportTimeOnlyStr, "N/A", sizeof(reportTimeOnlyStr));
     }
@@ -307,8 +340,8 @@ static void drawCommonElements() {
 
     // Date & Day of Week (Centered, two lines)
     menuSprite.setTextDatum(MC_DATUM);
-    const char* weekDayStr[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-    
+    const char *weekDayStr[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+
     // Line 1: Weekday
     menuSprite.setTextSize(3);
     menuSprite.setTextColor(DATE_WEEKDAY_COLOR, TFT_BLACK);
@@ -331,7 +364,7 @@ static void drawCommonElements() {
     menuSprite.setTextDatum(BC_DATUM);
     menuSprite.setTextSize(1);
     menuSprite.setTextColor(LAST_SYNC_WEATHER_COLOR, TFT_BLACK);
-    menuSprite.drawString(lastWeatherSyncStr, 120, tft.height()-15);
+    menuSprite.drawString(lastWeatherSyncStr, 120, tft.height() - 15);
 
     // DS18B20 Temperature
     menuSprite.setTextDatum(BC_DATUM);
@@ -345,19 +378,20 @@ static void drawCommonElements() {
     // WiFi Status
     menuSprite.setTextDatum(BC_DATUM);
     menuSprite.setTextSize(1);
-    if(ensureWiFiConnected())
+    if (ensureWiFiConnected())
     {
         menuSprite.setTextColor(WIFI_CONNECTED_COLOR, TFT_BLACK); // White for general status
     }
     else
     {
-        menuSprite.setTextColor(WIFI_DISCONNECTED_COLOR,TFT_BLACK);
+        menuSprite.setTextColor(WIFI_DISCONNECTED_COLOR, TFT_BLACK);
     }
-    menuSprite.drawString(wifiStatusStr, 120, tft.height()-25); // 10 pixels above lastWeatherSyncStr
-    menuSprite.setTextColor(TIME_MAIN_COLOR,TFT_BLACK);
+    menuSprite.drawString(wifiStatusStr, 120, tft.height() - 25); // 10 pixels above lastWeatherSyncStr
+    menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
 }
 
-static void drawAdvancedCommonElements() {
+static void drawAdvancedCommonElements()
+{
     drawCommonElements();
     drawTargetElements(&menuSprite);
 }
@@ -368,46 +402,53 @@ static void drawAdvancedCommonElements() {
 
 
 // The map function, as seen in charge/main.c
-static long mymap(long x, long in_min, long in_max, long out_min, long out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+static long mymap(long x, long in_min, long in_max, long out_min, long out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 // Helper to draw a bitmap with a transparent background
-static void drawXBitmap_transparent(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) {
-  int16_t i, j, byteWidth = (w + 7) / 8;
-  uint8_t b;
+static void drawXBitmap_transparent(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color)
+{
+    int16_t i, j, byteWidth = (w + 7) / 8;
+    uint8_t b;
 
-  for(j=0; j<h; j++) {
-    for(i=0; i<w; i++) {
-      if(i & 7) b <<= 1;
-      else      b = bitmap[j * byteWidth + i / 8];
-      if(b & 0x80) menuSprite.drawPixel(x+i, y+j, color);
+    for (j = 0; j < h; j++)
+    {
+        for (i = 0; i < w; i++)
+        {
+            if (i & 7) b <<= 1;
+            else      b = bitmap[j * byteWidth + i / 8];
+            if (b & 0x80) menuSprite.drawPixel(x + i, y + j, color);
+        }
     }
-  }
 }
 
 // Data from charge/main.c
 static const unsigned char battery_outline[] = {
     0xfc, 0xfe, 0x7, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x7, 0xfe, 0xfc, 0x0, 0x0, 0x0,
-		0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xf0, 0xf0, 0xe0,
-		0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xf, 0xf, 0x7,
-		0x3f, 0x7f, 0xe0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xe0, 0x7f, 0x3f, 0x0, 0x0, 0x0,
+        0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xf0, 0xf0, 0xe0,
+        0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xf, 0xf, 0x7,
+        0x3f, 0x7f, 0xe0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xe0, 0x7f, 0x3f, 0x0, 0x0, 0x0,
 };
 
 static const unsigned char water_array[30][128] = {
-		{0xfe, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xf0, 0xe0, 0xc0, 0xc0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0x1e, 0x1e, 0x1e, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xff, 0xff, 0x7f, 0x7f, 0x3f, 0x1f, 0x1f, 0x7, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x7, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0,},
-		{0xfe, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x10, 0x38, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1e, 0x1e, 0x1f, 0x3e, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xff, 0xff, 0x7f, 0x3f, 0x3f, 0xf, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x7, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,},
+        {0xfe, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xf0, 0xe0, 0xc0, 0xc0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0x1e, 0x1e, 0x1e, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xff, 0xff, 0x7f, 0x7f, 0x3f, 0x1f, 0x1f, 0x7, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x7, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0,},
+        {0xfe, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x10, 0x38, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1e, 0x1e, 0x1f, 0x3e, 0x1c, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,0xff, 0xff, 0xff, 0xff, 0x7f, 0x3f, 0x3f, 0xf, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x7, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,},
         // ... (rest of the water_array data) ...
 };
 
-static void ChargeWatchface() {
+static void ChargeWatchface()
+{
     static int anim_frame = 0;
     int xoff = (tft.width() - 70) / 2;
     int yoff = 150;
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false;
             return;
         }
@@ -415,7 +456,8 @@ static void ChargeWatchface() {
         handlePeriodicSync();
         handleHourlyChime();
 
-        if (readButton()) {
+        if (readButton())
+        {
             tone(BUZZER_PIN, 1500, 50);
             menuSprite.setTextFont(MENU_FONT);
             return;
@@ -427,16 +469,17 @@ static void ChargeWatchface() {
 
         menuSprite.setTextDatum(MC_DATUM);
         char timeStr[10];
-        sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min,timeinfo.tm_sec);
+        sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(5);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        menuSprite.drawString(timeStr, tft.width()/2, 115);
+        menuSprite.drawString(timeStr, tft.width() / 2, 115);
 
         menuSprite.drawXBitmap(xoff, yoff, battery_outline, 70, 40, TFT_WHITE, TFT_BLACK);
 
         long fill_width = mymap(timeinfo.tm_sec, 0, 59, 0, 64);
 
-        if (fill_width > 0) {
+        if (fill_width > 0)
+        {
             menuSprite.fillRect(xoff + 3, yoff + 3, fill_width, 34, TIME_MAIN_COLOR);
         }
 
@@ -474,17 +517,21 @@ static const uint8_t cube_indices[] = {
     0, 4, 1, 5, 2, 6, 3, 7
 };
 
-static void Cube3DWatchface() {
+static void Cube3DWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval_Weather - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     static float rot = 0;
     static float rotInc = 1;
     int16_t cube_vertices[8 * 3];
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -497,15 +544,18 @@ static void Cube3DWatchface() {
         handleHourlyChime();
 
         int encoderChange = readEncoder();
-        if (encoderChange != 0) {
+        if (encoderChange != 0)
+        {
             rotInc += encoderChange;
             if (rotInc > 10) rotInc = 10;
             if (rotInc < 1) rotInc = 1;
             tone(BUZZER_PIN, 1000, 50);
         }
 
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -518,12 +568,12 @@ static void Cube3DWatchface() {
 
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
-        
+
         memcpy(cube_vertices, cube_vertices_start, sizeof(cube_vertices_start));
 
         rot += rotInc / 10.0;
-        if(rot >= 360) rot = 0;
-        else if(rot < 0) rot = 359;
+        if (rot >= 360) rot = 0;
+        else if (rot < 0) rot = 359;
 
         float rot_rad = rot * M_PI / 180.0;
         float rot_rad2 = (rot * 1.5) * M_PI / 180.0; // Adjusted rotation speed for different axes
@@ -536,8 +586,9 @@ static void Cube3DWatchface() {
         float sin_rot3 = sin(rot_rad3);
         float cos_rot3 = cos(rot_rad3);
 
-        for(int i=0; i<8; ++i) {
-            int16_t* vertex = &cube_vertices[i * 3];
+        for (int i = 0; i < 8; ++i)
+        {
+            int16_t *vertex = &cube_vertices[i * 3];
             int16_t x = vertex[0], y = vertex[1], z = vertex[2];
 
             int16_t x_new = x * cos_rot - y * sin_rot;
@@ -563,21 +614,22 @@ static void Cube3DWatchface() {
             vertex[1] = y;
         }
 
-        for(int i=0; i<12; ++i) {
-            const uint8_t* indices = &cube_indices[i * 2];
-            int16_t* p1 = &cube_vertices[indices[0] * 3];
-            int16_t* p2 = &cube_vertices[indices[1] * 3];
+        for (int i = 0; i < 12; ++i)
+        {
+            const uint8_t *indices = &cube_indices[i * 2];
+            int16_t *p1 = &cube_vertices[indices[0] * 3];
+            int16_t *p2 = &cube_vertices[indices[1] * 3];
             menuSprite.drawLine(p1[0], p1[1], p2[0], p2[1], TIME_TENTH_COLOR);
         }
 
         char timeStr[20];
         int tenth = (millis() % 1000) / 100;
-        sprintf(timeStr, "%02d:%02d:%02d.%d", timeinfo.tm_hour, timeinfo.tm_min,timeinfo.tm_sec,tenth);
+        sprintf(timeStr, "%02d:%02d:%02d.%d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, tenth);
         menuSprite.setTextFont(1);
         menuSprite.setTextDatum(TC_DATUM);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        menuSprite.drawString(timeStr, tft.width()/2, 15);
+        menuSprite.drawString(timeStr, tft.width() / 2, 15);
 
 
         menuSprite.pushSprite(0, 0);
@@ -586,7 +638,8 @@ static void Cube3DWatchface() {
 }
 
 // --- Galaxy ---
-struct GalaxyStar {
+struct GalaxyStar
+{
     int x;
     int y;
     int time;
@@ -594,48 +647,60 @@ struct GalaxyStar {
 
 static GalaxyStar galaxy_stars[50];
 
-static float galaxy_radians(float angle) {
+static float galaxy_radians(float angle)
+{
     return angle * M_PI / 180.0;
 }
 
-static void galaxy_draw_spiral_stars(uint16_t num_stars, uint16_t arm_length, uint16_t spread, uint16_t rotation_offset) {
-    for (int i = 0; i < num_stars; i++) {
+static void galaxy_draw_spiral_stars(uint16_t num_stars, uint16_t arm_length, uint16_t spread, uint16_t rotation_offset)
+{
+    for (int i = 0; i < num_stars; i++)
+    {
         int angle = i * spread + rotation_offset;
         int length = arm_length * i / num_stars;
-        
+
         int x = length * cos(galaxy_radians(angle)) * 3 / 5;
         int y = length * sin(galaxy_radians(angle)) * 3 / 5;
-        
+
         menuSprite.drawPixel(x + tft.width() / 2, y + tft.height() / 2, TFT_WHITE);
     }
 }
 
-static void galaxy_draw_main() {
+static void galaxy_draw_main()
+{
     static uint16_t rotation_angle = 0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++)
+    {
         galaxy_draw_spiral_stars(15, 130, 10, i * 90 + rotation_angle);
     }
-    if (++rotation_angle >= 360) {
+    if (++rotation_angle >= 360)
+    {
         rotation_angle = 0;
     }
 }
 
-static void galaxy_random_drawStars() {
+static void galaxy_random_drawStars()
+{
     static uint32_t time_counter = 0;
-    if (time_counter % 2 == 0) {
+    if (time_counter % 2 == 0)
+    {
         int i = 0;
-        while (galaxy_stars[i].time && i < 50) {
+        while (galaxy_stars[i].time && i < 50)
+        {
             i++;
         }
-        if (i < 50) {
+        if (i < 50)
+        {
             galaxy_stars[i].time = 30;
             galaxy_stars[i].x = util_random(tft.width());
             galaxy_stars[i].y = util_random(tft.height());
         }
     }
 
-    for (int i = 0; i < 50; i++) {
-        if (galaxy_stars[i].time > 0) {
+    for (int i = 0; i < 50; i++)
+    {
+        if (galaxy_stars[i].time > 0)
+        {
             galaxy_stars[i].time--;
             menuSprite.drawPixel(galaxy_stars[i].x, galaxy_stars[i].y, TFT_WHITE);
         }
@@ -643,17 +708,22 @@ static void galaxy_random_drawStars() {
     time_counter++;
 }
 
-static void GalaxyWatchface() {
+static void GalaxyWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval_Weather - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    for(int i=0; i<50; ++i) {
+    for (int i = 0; i < 50; ++i)
+    {
         galaxy_stars[i].time = 0;
     }
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -665,8 +735,10 @@ static void GalaxyWatchface() {
         handlePeriodicSync();
         handleHourlyChime();
 
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -679,18 +751,18 @@ static void GalaxyWatchface() {
 
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
-        
+
         galaxy_draw_main();
         galaxy_random_drawStars();
 
         char timeStr[20];
         int tenth = (millis() % 1000) / 100;
-        sprintf(timeStr, "%02d:%02d:%02d.%d", timeinfo.tm_hour, timeinfo.tm_min,timeinfo.tm_sec,tenth);
+        sprintf(timeStr, "%02d:%02d:%02d.%d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, tenth);
         menuSprite.setTextFont(1);
         menuSprite.setTextDatum(TC_DATUM);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        menuSprite.drawString(timeStr, tft.width()/2, 15);
+        menuSprite.drawString(timeStr, tft.width() / 2, 15);
 
 
         menuSprite.pushSprite(0, 0);
@@ -699,13 +771,17 @@ static void GalaxyWatchface() {
 }
 
 
-static void SimClockWatchface() {
+static void SimClockWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval_Weather - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -717,8 +793,10 @@ static void SimClockWatchface() {
         handlePeriodicSync();
         handleHourlyChime();
 
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -734,19 +812,21 @@ static void SimClockWatchface() {
 
         int centerX = tft.width() / 2;
         int centerY = tft.height() / 2;
-        int radius = std::min(tft.width(), tft.height()) / 2 - 10; 
+        int radius = std::min(tft.width(), tft.height()) / 2 - 10;
 
         // Draw clock circle
         menuSprite.drawCircle(centerX, centerY, radius, TFT_WHITE);
 
         // Draw minute tick marks
-        for (int i = 0; i < 60; i++) {
-            if (i % 5 != 0) { // Only draw for non-hour marks
+        for (int i = 0; i < 60; i++)
+        {
+            if (i % 5 != 0)
+            { // Only draw for non-hour marks
                 float angle = (i * 6 - 90) * M_PI / 180.0;
-                int startX = centerX + (int)((radius - 4) * cos(angle));
-                int startY = centerY + (int)((radius - 4) * sin(angle));
-                int endX = centerX + (int)(radius * cos(angle));
-                int endY = centerY + (int)(radius * sin(angle));
+                int startX = centerX + (int) ((radius - 4) * cos(angle));
+                int startY = centerY + (int) ((radius - 4) * sin(angle));
+                int endX = centerX + (int) (radius * cos(angle));
+                int endY = centerY + (int) (radius * sin(angle));
                 menuSprite.drawLine(startX, startY, endX, endY, TFT_DARKGREY);
             }
         }
@@ -755,10 +835,11 @@ static void SimClockWatchface() {
         menuSprite.setTextDatum(MC_DATUM);
         menuSprite.setTextSize(2);
         menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
-        for (int i = 1; i <= 12; i++) {
+        for (int i = 1; i <= 12; i++)
+        {
             float angle = (i * 30 - 90) * M_PI / 180.0;
-            int numX = centerX + (int)((radius - 12) * cos(angle));
-            int numY = centerY + (int)((radius - 12) * sin(angle));
+            int numX = centerX + (int) ((radius - 12) * cos(angle));
+            int numY = centerY + (int) ((radius - 12) * sin(angle));
             menuSprite.drawString(String(i), numX, numY);
         }
 
@@ -767,20 +848,20 @@ static void SimClockWatchface() {
 
         // Hour hand
         float hourAngle = (timeinfo.tm_hour % 12 + timeinfo.tm_min / 60.0) * 30 - 90; // -90 for 12 o'clock at top
-        int hourX = centerX + (int)(0.5 * radius * cos(hourAngle * M_PI / 180.0));
-        int hourY = centerY + (int)(0.5 * radius * sin(hourAngle * M_PI / 180.0));
+        int hourX = centerX + (int) (0.5 * radius * cos(hourAngle * M_PI / 180.0));
+        int hourY = centerY + (int) (0.5 * radius * sin(hourAngle * M_PI / 180.0));
         menuSprite.drawLine(centerX, centerY, hourX, hourY, TFT_RED);
 
         // Minute hand
         float minAngle = (timeinfo.tm_min + timeinfo.tm_sec / 60.0) * 6 - 90;
-        int minX = centerX + (int)(0.8 * radius * cos(minAngle * M_PI / 180.0));
-        int minY = centerY + (int)(0.8 * radius * sin(minAngle * M_PI / 180.0));
+        int minX = centerX + (int) (0.8 * radius * cos(minAngle * M_PI / 180.0));
+        int minY = centerY + (int) (0.8 * radius * sin(minAngle * M_PI / 180.0));
         menuSprite.drawLine(centerX, centerY, minX, minY, TFT_GREEN);
 
         // Second hand - FIXED (只使用秒数)
         float secAngle = timeinfo.tm_sec * 6 - 90;
-        int secX = centerX + (int)(0.9 * radius * cos(secAngle * M_PI / 180.0));
-        int secY = centerY + (int)(0.9 * radius * sin(secAngle * M_PI / 180.0));
+        int secX = centerX + (int) (0.9 * radius * cos(secAngle * M_PI / 180.0));
+        int secY = centerY + (int) (0.9 * radius * sin(secAngle * M_PI / 180.0));
         menuSprite.drawLine(centerX, centerY, secX, secY, TFT_BLUE);
 
         // --- Draw Time ---
@@ -805,13 +886,17 @@ static void SimClockWatchface() {
     }
 }
 
-static void PlaceholderWatchface() {
+static void PlaceholderWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval_Weather - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -822,8 +907,10 @@ static void PlaceholderWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -841,30 +928,33 @@ static void PlaceholderWatchface() {
         menuSprite.setTextFont(1);
         menuSprite.setTextDatum(MC_DATUM);
         menuSprite.setTextSize(2);
-        menuSprite.drawString("Placeholder", tft.width()/2, tft.height()/2 + 20);
-        
-        menuSprite.pushSprite(0,0);
+        menuSprite.drawString("Placeholder", tft.width() / 2, tft.height() / 2 + 20);
+
+        menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
 // --- Vector Scan ---
 #define TICKER_GAP 4
-struct TickerData {
+struct TickerData
+{
     int16_t x, y, w, h;
     uint8_t val, max_val;
     bool moving;
     int16_t y_pos;
 };
 
-static void drawTickerNum(TickerData* data) {
+static void drawTickerNum(TickerData *data)
+{
     int16_t y_pos = data->y_pos;
     int16_t x = data->x, y = data->y, w = data->w, h = data->h;
     uint8_t prev_val = (data->val == 0) ? data->max_val : data->val - 1;
-    char current_char[2] = {(char)('0' + data->val), '\0'};
-    char prev_char[2] = {(char)('0' + prev_val), '\0'};
+    char current_char[2] = { (char) ('0' + data->val), '\0' };
+    char prev_char[2] = { (char) ('0' + prev_val), '\0' };
 
-    if (!data->moving || y_pos == 0) {
+    if (!data->moving || y_pos == 0)
+    {
         menuSprite.drawString(current_char, x, y);
         return;
     }
@@ -881,18 +971,20 @@ static void drawTickerNum(TickerData* data) {
     menuSprite.resetViewport();
 
     menuSprite.drawFastHLine(x, y + h - reveal_height, w, TFT_WHITE);
-    menuSprite.drawLine(tft.width()/2, tft.height()-1, x + w/2, y + h - reveal_height, TFT_GREEN);
+    menuSprite.drawLine(tft.width() / 2, tft.height() - 1, x + w / 2, y + h - reveal_height, TFT_GREEN);
 }
 
 // --- Vector Scroll ---
-static void drawVectorScrollTickerNum(TickerData* data) {
+static void drawVectorScrollTickerNum(TickerData *data)
+{
     int16_t y_pos = data->y_pos;
     int16_t x = data->x, y = data->y, h = data->h;
     uint8_t prev_val = (data->val == 0) ? data->max_val : data->val - 1;
-    char current_char[2] = {(char)('0' + data->val), '\0'};
-    char prev_char[2] = {(char)('0' + prev_val), '\0'};
+    char current_char[2] = { (char) ('0' + data->val), '\0' };
+    char prev_char[2] = { (char) ('0' + prev_val), '\0' };
 
-    if (!data->moving || y_pos == 0 || y_pos > h + TICKER_GAP) {
+    if (!data->moving || y_pos == 0 || y_pos > h + TICKER_GAP)
+    {
         menuSprite.drawString(current_char, x, y);
         return;
     }
@@ -908,12 +1000,13 @@ static void drawVectorScrollTickerNum(TickerData* data) {
     menuSprite.drawString(prev_char, x, old_y);
 }
 
-static void VectorScrollWatchface() {
+static void VectorScrollWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval_Weather - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     time_s last_time;
     TickerData tickers[6];
-    
+
     int num_w = 35, num_h = 50;
     int colon_w = 15; // Width for colon spacing
     int start_x = (tft.width() - (num_w * 4 + colon_w * 2 + num_w * 2)) / 2; // Adjusted for 6 digits + 2 colons
@@ -926,23 +1019,26 @@ static void VectorScrollWatchface() {
     last_time.secs = timeinfo.tm_sec;
 
     // Hour, Minute, Second tickers
-    tickers[0] = {start_x, y_main, num_w, num_h, (uint8_t)(last_time.hour / 10), 2, false, 0};
-    tickers[1] = {start_x + num_w+5, y_main, num_w, num_h, (uint8_t)(last_time.hour % 10), 9, false, 0};
-    tickers[2] = {start_x + num_w*2 + colon_w + 20, y_main, num_w, num_h, (uint8_t)(last_time.mins / 10), 5, false, 0}; // Shifted right
-    tickers[3] = {start_x + num_w*3 + colon_w + 20+5, y_main, num_w, num_h, (uint8_t)(last_time.mins % 10), 9, false, 0}; // Shifted right
+    tickers[0] = { start_x, y_main, num_w, num_h, (uint8_t) (last_time.hour / 10), 2, false, 0 };
+    tickers[1] = { start_x + num_w + 5, y_main, num_w, num_h, (uint8_t) (last_time.hour % 10), 9, false, 0 };
+    tickers[2] = { start_x + num_w * 2 + colon_w + 20, y_main, num_w, num_h, (uint8_t) (last_time.mins / 10), 5, false, 0 }; // Shifted right
+    tickers[3] = { start_x + num_w * 3 + colon_w + 20 + 5, y_main, num_w, num_h, (uint8_t) (last_time.mins % 10), 9, false, 0 }; // Shifted right
     // Seconds are now smaller and below minutes
     int sec_num_w = 20, sec_num_h = 25;
     int sec_x_offset = tickers[3].x + num_w + 5; // Right of last minute digit, slightly back
     int sec_y_offset = y_main + num_h - sec_num_h + 5; // Below minutes
 
-    tickers[4] = {sec_x_offset, sec_y_offset, sec_num_w, sec_num_h, (uint8_t)(last_time.secs / 10), 5, false, 0};
-    tickers[5] = {sec_x_offset + sec_num_w, sec_y_offset, sec_num_w, sec_num_h, (uint8_t)(last_time.secs % 10), 9, false, 0};
+    tickers[4] = { sec_x_offset, sec_y_offset, sec_num_w, sec_num_h, (uint8_t) (last_time.secs / 10), 5, false, 0 };
+    tickers[5] = { sec_x_offset + sec_num_w, sec_y_offset, sec_num_w, sec_num_h, (uint8_t) (last_time.secs % 10), 9, false, 0 };
 
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -953,8 +1049,10 @@ static void VectorScrollWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -979,24 +1077,27 @@ static void VectorScrollWatchface() {
         last_time = g_watchface_timeDate.time;
 
         menuSprite.fillSprite(TFT_BLACK);
-        drawAdvancedCommonElements(); 
+        drawAdvancedCommonElements();
         menuSprite.setTextDatum(TL_DATUM);
 
         // Update and draw tickers
-        for (int i=0; i<6; ++i) {
+        for (int i = 0; i < 6; ++i)
+        {
             bool is_sec = (i >= 4);
             int current_h = is_sec ? sec_num_h : num_h;
             menuSprite.setTextSize(is_sec ? 3 : 7); // smaller seconds
-            
-            if (tickers[i].moving) {
-                int16_t* yPos = &tickers[i].y_pos;
-                if(*yPos <= 3) (*yPos)++;
-                else if(*yPos <= 6) (*yPos) += 3;
-                else if(*yPos <= 16) (*yPos) += 5;
-                else if(*yPos <= 22) (*yPos) += 3;
-                else if(*yPos <= current_h + TICKER_GAP) (*yPos)++;
-                
-                if (*yPos > current_h + TICKER_GAP) {
+
+            if (tickers[i].moving)
+            {
+                int16_t *yPos = &tickers[i].y_pos;
+                if (*yPos <= 3) (*yPos)++;
+                else if (*yPos <= 6) (*yPos) += 3;
+                else if (*yPos <= 16) (*yPos) += 5;
+                else if (*yPos <= 22) (*yPos) += 3;
+                else if (*yPos <= current_h + TICKER_GAP) (*yPos)++;
+
+                if (*yPos > current_h + TICKER_GAP)
+                {
                     tickers[i].moving = false;
                     tickers[i].y_pos = 0;
                 }
@@ -1005,10 +1106,11 @@ static void VectorScrollWatchface() {
         }
 
         // Draw blinking colon between HH and MM
-        if (millis() % 1000 < 500) {
+        if (millis() % 1000 < 500)
+        {
             menuSprite.setTextSize(4); // Smaller colon
             menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-            menuSprite.drawString(":", start_x + num_w*2 + 10, y_main + 5); // Adjusted position
+            menuSprite.drawString(":", start_x + num_w * 2 + 10, y_main + 5); // Adjusted position
         }
 
         // Draw 0.1s digit
@@ -1020,12 +1122,13 @@ static void VectorScrollWatchface() {
         int y_pos = tickers[5].y + tickers[5].h - 8; // -8 for font height
         menuSprite.drawString(String(tenth), x_pos, y_pos);
 
-        menuSprite.pushSprite(0,0);
+        menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
-static void VectorScanWatchface() {
+static void VectorScanWatchface()
+{
 
     time_s last_time;
     TickerData tickers[6];
@@ -1041,23 +1144,26 @@ static void VectorScanWatchface() {
     last_time.secs = timeinfo.tm_sec;
 
     // Hour, Minute, Second tickers
-    tickers[0] = {start_x, y_main, num_w, num_h, (uint8_t)(last_time.hour / 10), 2, false, 0};
-    tickers[1] = {start_x + num_w+5, y_main, num_w, num_h, (uint8_t)(last_time.hour % 10), 9, false, 0};
-    tickers[2] = {start_x + num_w*2 + colon_w + 20, y_main, num_w, num_h, (uint8_t)(last_time.mins / 10), 5, false, 0}; // Shifted right
-    tickers[3] = {start_x + num_w*3 + colon_w + 20+5, y_main, num_w, num_h, (uint8_t)(last_time.mins % 10), 9, false, 0}; // Shifted right
+    tickers[0] = { start_x, y_main, num_w, num_h, (uint8_t) (last_time.hour / 10), 2, false, 0 };
+    tickers[1] = { start_x + num_w + 5, y_main, num_w, num_h, (uint8_t) (last_time.hour % 10), 9, false, 0 };
+    tickers[2] = { start_x + num_w * 2 + colon_w + 20, y_main, num_w, num_h, (uint8_t) (last_time.mins / 10), 5, false, 0 }; // Shifted right
+    tickers[3] = { start_x + num_w * 3 + colon_w + 20 + 5, y_main, num_w, num_h, (uint8_t) (last_time.mins % 10), 9, false, 0 }; // Shifted right
     // Seconds are now smaller and below minutes
     int sec_num_w = 20, sec_num_h = 25;
     int sec_x_offset = tickers[3].x + num_w + 5; // Right of last minute digit, slightly back
     int sec_y_offset = y_main + num_h - sec_num_h + 5; // Below minutes
 
-    tickers[4] = {sec_x_offset, sec_y_offset, sec_num_w, sec_num_h, (uint8_t)(last_time.secs / 10), 5, false, 0};
-    tickers[5] = {sec_x_offset + sec_num_w, sec_y_offset, sec_num_w, sec_num_h, (uint8_t)(last_time.secs % 10), 9, false, 0};
+    tickers[4] = { sec_x_offset, sec_y_offset, sec_num_w, sec_num_h, (uint8_t) (last_time.secs / 10), 5, false, 0 };
+    tickers[5] = { sec_x_offset + sec_num_w, sec_y_offset, sec_num_w, sec_num_h, (uint8_t) (last_time.secs % 10), 9, false, 0 };
 
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1068,8 +1174,10 @@ static void VectorScanWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1097,10 +1205,12 @@ static void VectorScanWatchface() {
         drawAdvancedCommonElements();
         menuSprite.setTextDatum(TL_DATUM);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-  // Update and draw tickers
-        for (int i=0; i<6; ++i) {
+        // Update and draw tickers
+        for (int i = 0; i < 6; ++i)
+        {
             menuSprite.setTextSize((i < 4) ? 7 : 3); // HH:MM large, SS smaller
-            if (tickers[i].moving) {
+            if (tickers[i].moving)
+            {
                 tickers[i].y_pos += 5;
                 if (tickers[i].y_pos >= ((i < 4) ? num_h : sec_num_h) + TICKER_GAP) tickers[i].moving = false;
             }
@@ -1108,10 +1218,11 @@ static void VectorScanWatchface() {
         }
 
         // Draw blinking colon between HH and MM
-        if (millis() % 1000 < 500) {
+        if (millis() % 1000 < 500)
+        {
             menuSprite.setTextSize(4); // Smaller colon
             menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
-            menuSprite.drawString(":", start_x + num_w*2 + 10, y_main + 5); // Adjusted position
+            menuSprite.drawString(":", start_x + num_w * 2 + 10, y_main + 5); // Adjusted position
         }
 
         // Draw 0.1s digit
@@ -1123,19 +1234,23 @@ static void VectorScanWatchface() {
         int y_pos = tickers[5].y + tickers[5].h - 8;
         menuSprite.drawString(String(tenth), x_pos, y_pos);
 
-        menuSprite.pushSprite(0,0);
+        menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
 // --- Simple Clock ---
-static void SimpleClockWatchface() {
+static void SimpleClockWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1147,8 +1262,10 @@ static void SimpleClockWatchface() {
         handlePeriodicSync();
         handleHourlyChime();
 
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1158,7 +1275,7 @@ static void SimpleClockWatchface() {
             menuSprite.setTextFont(MENU_FONT);
             return;
         }
-        
+
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
         drawAdvancedCommonElements();
@@ -1169,17 +1286,17 @@ static void SimpleClockWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(5);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -1192,19 +1309,24 @@ char rain_chars[RAIN_COLS];
 int rain_pos[RAIN_COLS];
 int rain_speed[RAIN_COLS];
 
-static void shared_rain_logic(uint16_t color) {
+static void shared_rain_logic(uint16_t color)
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     util_randomSeed(millis());
-    for(int i=0; i<RAIN_COLS; i++) {
+    for (int i = 0; i < RAIN_COLS; i++)
+    {
         rain_pos[i] = util_random_range(0, tft.height());
         rain_speed[i] = util_random_range(1, 5);
-        rain_chars[i] = (char)util_random_range(33, 126);
+        rain_chars[i] = (char) util_random_range(33, 126);
     }
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1215,8 +1337,10 @@ static void shared_rain_logic(uint16_t color) {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1229,16 +1353,18 @@ static void shared_rain_logic(uint16_t color) {
 
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
-        
-        for(int i=0; i<RAIN_COLS; i++) {
+
+        for (int i = 0; i < RAIN_COLS; i++)
+        {
             rain_pos[i] += rain_speed[i];
-            if(rain_pos[i] > tft.height()) {
+            if (rain_pos[i] > tft.height())
+            {
                 rain_pos[i] = 0;
-                rain_chars[i] = (char)util_random_range(33, 126);
+                rain_chars[i] = (char) util_random_range(33, 126);
             }
             draw_char(i * 8, rain_pos[i], rain_chars[i], color, TFT_BLACK, 1);
         }
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1247,17 +1373,17 @@ static void shared_rain_logic(uint16_t color) {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
@@ -1269,15 +1395,19 @@ static void CodeRainWatchface() { shared_rain_logic(TFT_CYAN); }
 // --- Snow ---
 #define SNOW_PARTICLES 100
 std::vector<std::pair<int, int>> snow_particles(SNOW_PARTICLES);
-static void SnowWatchface() {
+static void SnowWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     util_randomSeed(millis());
-    for(auto& p : snow_particles) { p.first = util_random_range(0, tft.width()); p.second = util_random_range(0, tft.height()); }
-    while(1) {
-        if (exitSubMenu) {
+    for (auto &p : snow_particles) { p.first = util_random_range(0, tft.width()); p.second = util_random_range(0, tft.height()); }
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1288,8 +1418,10 @@ static void SnowWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1303,12 +1435,13 @@ static void SnowWatchface() {
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
 
-        for(auto& p : snow_particles) {
+        for (auto &p : snow_particles)
+        {
             p.second += 1;
-            if(p.second > tft.height()) { p.second = 0; p.first = util_random_range(0, tft.width()); }
+            if (p.second > tft.height()) { p.second = 0; p.first = util_random_range(0, tft.width()); }
             menuSprite.drawPixel(p.first, p.second, TFT_WHITE);
         }
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1317,17 +1450,17 @@ static void SnowWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(30));
@@ -1335,14 +1468,18 @@ static void SnowWatchface() {
 }
 
 // --- Waves ---
-static void WavesWatchface() {
+static void WavesWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     float time = 0;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1353,8 +1490,10 @@ static void WavesWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1368,13 +1507,14 @@ static void WavesWatchface() {
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
 
-        for(int x=0; x<tft.width(); x++) {
-            menuSprite.drawPixel(x, sin((float)x/20+time)*20+60, TFT_CYAN);
-            menuSprite.drawPixel(x, cos((float)x/15+time)*20+120, TFT_MAGENTA);
-            menuSprite.drawPixel(x, sin((float)x/10+time*2)*20+180, TFT_YELLOW);
+        for (int x = 0; x < tft.width(); x++)
+        {
+            menuSprite.drawPixel(x, sin((float) x / 20 + time) * 20 + 60, TFT_CYAN);
+            menuSprite.drawPixel(x, cos((float) x / 15 + time) * 20 + 120, TFT_MAGENTA);
+            menuSprite.drawPixel(x, sin((float) x / 10 + time * 2) * 20 + 180, TFT_YELLOW);
         }
         time += 0.1;
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1383,17 +1523,17 @@ static void WavesWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
@@ -1401,14 +1541,18 @@ static void WavesWatchface() {
 }
 
 // --- Neno (Neon Lines) ---
-static void NenoWatchface() {
+static void NenoWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     float time = 0;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1419,8 +1563,10 @@ static void NenoWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1434,12 +1580,12 @@ static void NenoWatchface() {
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
 
-        float x1 = tft.width()/2+sin(time)*50, y1 = tft.height()/2+cos(time)*50;
-        float x2 = tft.width()/2+sin(time+PI)*50, y2 = tft.height()/2+cos(time+PI)*50;
+        float x1 = tft.width() / 2 + sin(time) * 50, y1 = tft.height() / 2 + cos(time) * 50;
+        float x2 = tft.width() / 2 + sin(time + PI) * 50, y2 = tft.height() / 2 + cos(time + PI) * 50;
         menuSprite.drawLine(x1, y1, x2, y2, TFT_RED);
-        menuSprite.drawLine(tft.width()-x1, y1, tft.width()-x2, y2, TFT_BLUE);
+        menuSprite.drawLine(tft.width() - x1, y1, tft.width() - x2, y2, TFT_BLUE);
         time += 0.05;
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1448,17 +1594,17 @@ static void NenoWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
@@ -1470,19 +1616,24 @@ static void NenoWatchface() {
 struct Ball { float x, y, vx, vy; uint16_t color; };
 std::vector<Ball> balls(BALL_COUNT);
 
-static void BallsWatchface() {
+static void BallsWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     util_randomSeed(millis());
-    for(auto& b : balls) {
-        b.x = util_random_range(10, tft.width()-10); b.y = util_random_range(10, tft.height()-10);
+    for (auto &b : balls)
+    {
+        b.x = util_random_range(10, tft.width() - 10); b.y = util_random_range(10, tft.height() - 10);
         b.vx = util_random_range(-3, 3); b.vy = util_random_range(-3, 3);
         b.color = util_random(0xFFFF);
     }
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1493,8 +1644,10 @@ static void BallsWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1508,13 +1661,14 @@ static void BallsWatchface() {
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
 
-        for(auto& b : balls) {
+        for (auto &b : balls)
+        {
             b.x += b.vx; b.y += b.vy;
-            if(b.x < 5 || b.x > tft.width()-5) b.vx *= -1;
-            if(b.y < 5 || b.y > tft.height()-5) b.vy *= -1;
+            if (b.x < 5 || b.x > tft.width() - 5) b.vx *= -1;
+            if (b.y < 5 || b.y > tft.height() - 5) b.vy *= -1;
             menuSprite.fillCircle(b.x, b.y, 5, b.color);
         }
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1523,17 +1677,17 @@ static void BallsWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(20));
@@ -1543,15 +1697,19 @@ static void BallsWatchface() {
 // --- Sand Box ---
 #define SAND_WIDTH 120
 #define SAND_HEIGHT 120
-byte sand_grid[SAND_WIDTH][SAND_HEIGHT] = {0};
+byte sand_grid[SAND_WIDTH][SAND_HEIGHT] = { 0 };
 
-static void SandBoxWatchface() {
+static void SandBoxWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1562,8 +1720,10 @@ static void SandBoxWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1575,25 +1735,30 @@ static void SandBoxWatchface() {
         }
 
         getLocalTime(&timeinfo);
-        
-        if(util_random(100) < 20) sand_grid[util_random(SAND_WIDTH)][0] = 1;
+
+        if (util_random(100) < 20) sand_grid[util_random(SAND_WIDTH)][0] = 1;
         menuSprite.fillSprite(TFT_BLACK);
 
-        for(int y=SAND_HEIGHT-2; y>=0; y--) {
-            for(int x=0; x<SAND_WIDTH; x++) {
-                if(sand_grid[x][y] == 1) {
-                    if(sand_grid[x][y+1] == 0) { sand_grid[x][y] = 0; sand_grid[x][y+1] = 1; }
-                    else if (x > 0 && sand_grid[x-1][y+1] == 0) { sand_grid[x][y] = 0; sand_grid[x-1][y+1] = 1; }
-                    else if (x < SAND_WIDTH-1 && sand_grid[x+1][y+1] == 0) { sand_grid[x][y] = 0; sand_grid[x+1][y+1] = 1; }
+        for (int y = SAND_HEIGHT - 2; y >= 0; y--)
+        {
+            for (int x = 0; x < SAND_WIDTH; x++)
+            {
+                if (sand_grid[x][y] == 1)
+                {
+                    if (sand_grid[x][y + 1] == 0) { sand_grid[x][y] = 0; sand_grid[x][y + 1] = 1; }
+                    else if (x > 0 && sand_grid[x - 1][y + 1] == 0) { sand_grid[x][y] = 0; sand_grid[x - 1][y + 1] = 1; }
+                    else if (x < SAND_WIDTH - 1 && sand_grid[x + 1][y + 1] == 0) { sand_grid[x][y] = 0; sand_grid[x + 1][y + 1] = 1; }
                 }
             }
         }
-        for(int y=0; y<SAND_HEIGHT; y++) {
-            for(int x=0; x<SAND_WIDTH; x++) {
-                if(sand_grid[x][y] == 1) menuSprite.drawPixel(x*2, y*2, TFT_YELLOW);
+        for (int y = 0; y < SAND_HEIGHT; y++)
+        {
+            for (int x = 0; x < SAND_WIDTH; x++)
+            {
+                if (sand_grid[x][y] == 1) menuSprite.drawPixel(x * 2, y * 2, TFT_YELLOW);
             }
         }
-        
+
         drawAdvancedCommonElements();
 
         menuSprite.setTextFont(1);
@@ -1602,17 +1767,17 @@ static void SandBoxWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
         int timeHeight = menuSprite.fontHeight();
-        int timeX = tft.width()/2;
-        int timeY = (tft.height() - timeHeight)/2 + 10;
+        int timeX = tft.width() / 2;
+        int timeY = (tft.height() - timeHeight) / 2 + 10;
         menuSprite.drawString(timeStr, timeX, timeY);
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         menuSprite.pushSprite(0, 0);
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -1625,13 +1790,17 @@ static void SandBoxWatchface() {
 #define PB_BAR_HEIGHT 10
 #define PB_PERCENTAGE_TEXT_X (PB_DATA_X + PB_BAR_WIDTH + 10)
 
-static void ProgressBarWatchface() {
+static void ProgressBarWatchface()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1642,8 +1811,10 @@ static void ProgressBarWatchface() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1656,7 +1827,7 @@ static void ProgressBarWatchface() {
 
         getLocalTime(&timeinfo);
         menuSprite.fillSprite(TFT_BLACK);
-        drawCommonElements(); 
+        drawCommonElements();
 
         menuSprite.setTextFont(1);
         // --- Add Time Display ---
@@ -1665,16 +1836,16 @@ static void ProgressBarWatchface() {
         sprintf(timeStr, "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         menuSprite.setTextSize(4);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        
+
         int timeWidth = menuSprite.textWidth(timeStr);
-        int timeX = tft.width()/2;
+        int timeX = tft.width() / 2;
         int timeY = 125;
         menuSprite.drawString(timeStr, timeX, timeY); // Y-pos below the new date
 
         // Draw 0.1s digit
         int tenth = (millis() % 1000) / 100;
         menuSprite.setTextSize(1);
-        menuSprite.drawString(String(tenth), timeX + timeWidth/2 + 10, timeY + 10);
+        menuSprite.drawString(String(tenth), timeX + timeWidth / 2 + 10, timeY + 10);
 
         // --- Progress Bars ---
         menuSprite.setTextDatum(TL_DATUM);
@@ -1687,23 +1858,23 @@ static void ProgressBarWatchface() {
 
         // Day progress bar
         long seconds_in_day = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60 + timeinfo.tm_sec;
-        float day_progress = (float)seconds_in_day / (24.0 * 3600.0 - 1.0);
+        float day_progress = (float) seconds_in_day / (24.0 * 3600.0 - 1.0);
         menuSprite.fillRect(PB_DATA_X, bar_y_start, PB_BAR_WIDTH, PB_BAR_HEIGHT, TFT_DARKGREY);
-        menuSprite.fillRect(PB_DATA_X, bar_y_start, (int)(PB_BAR_WIDTH * day_progress), PB_BAR_HEIGHT, TFT_RED);
+        menuSprite.fillRect(PB_DATA_X, bar_y_start, (int) (PB_BAR_WIDTH * day_progress), PB_BAR_HEIGHT, TFT_RED);
         sprintf(buf, "Day: %.0f%%", day_progress * 100);
         menuSprite.drawString(buf, PB_PERCENTAGE_TEXT_X, bar_y_start);
 
         // Hour progress bar
-        float hour_progress = (float)(timeinfo.tm_min * 60 + timeinfo.tm_sec) / 3599.0;
+        float hour_progress = (float) (timeinfo.tm_min * 60 + timeinfo.tm_sec) / 3599.0;
         menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing, PB_BAR_WIDTH, PB_BAR_HEIGHT, TFT_DARKGREY);
-        menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing, (int)(PB_BAR_WIDTH * hour_progress), PB_BAR_HEIGHT, TFT_BLUE);
+        menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing, (int) (PB_BAR_WIDTH * hour_progress), PB_BAR_HEIGHT, TFT_BLUE);
         sprintf(buf, "Hor: %.0f%%", hour_progress * 100);
         menuSprite.drawString(buf, PB_PERCENTAGE_TEXT_X, bar_y_start + bar_y_spacing);
 
         // Minute progress bar
-        float minute_progress = (float)timeinfo.tm_sec / 59.0;
+        float minute_progress = (float) timeinfo.tm_sec / 59.0;
         menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing * 2, PB_BAR_WIDTH, PB_BAR_HEIGHT, TFT_DARKGREY);
-        menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing * 2, (int)(PB_BAR_WIDTH * minute_progress), PB_BAR_HEIGHT, TFT_GREEN);
+        menuSprite.fillRect(PB_DATA_X, bar_y_start + bar_y_spacing * 2, (int) (PB_BAR_WIDTH * minute_progress), PB_BAR_HEIGHT, TFT_GREEN);
         sprintf(buf, "Min: %.0f%%", minute_progress * 100);
         menuSprite.drawString(buf, PB_PERCENTAGE_TEXT_X, bar_y_start + bar_y_spacing * 2);
 
@@ -1723,7 +1894,8 @@ static void ProgressBarWatchface() {
 #define TENTH_SIZE 1       // 0.1秒字体大小倍数
 #define COLON_FONT 7       // 冒号字体编号
 #define COLON_SIZE 1       // 冒号字体大小倍数
-static void VectorScrollWatchface_SEG() {
+static void VectorScrollWatchface_SEG()
+{
     // lastSyncMillis_Weather = millis() - syncInterval - 1;
     // lastSyncMillis_Time = millis() - syncInterval - 1;
     static time_s last_time;
@@ -1735,10 +1907,13 @@ static void VectorScrollWatchface_SEG() {
     static int colon1_x, colon2_x;
     static int colon_y;
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1749,8 +1924,10 @@ static void VectorScrollWatchface_SEG() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1767,46 +1944,47 @@ static void VectorScrollWatchface_SEG() {
         g_watchface_timeDate.time.mins = timeinfo.tm_min;
         g_watchface_timeDate.time.secs = timeinfo.tm_sec;
 
-        if (firstRun) {
+        if (firstRun)
+        {
             int hour_num_w, hour_num_h, min_num_w, min_num_h, sec_num_w, sec_num_h, colon_w;
 
             menuSprite.setTextFont(HOUR_FONT);
             menuSprite.setTextSize(HOUR_SIZE);
             hour_num_w = menuSprite.textWidth("0");
             hour_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(MINUTE_FONT);
             menuSprite.setTextSize(MINUTE_SIZE);
             min_num_w = menuSprite.textWidth("0");
             min_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(SECOND_FONT);
             menuSprite.setTextSize(SECOND_SIZE);
             sec_num_w = menuSprite.textWidth("0");
             sec_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(COLON_FONT);
             menuSprite.setTextSize(COLON_SIZE);
             colon_w = menuSprite.textWidth(":");
-            
+
             int total_width = (hour_num_w * 2) + colon_w + (min_num_w * 2) + colon_w + (sec_num_w * 2) + 30; // Added some padding
             int start_x = (menuSprite.width() - total_width) / 2;
             y_main = (menuSprite.height() - hour_num_h) / 2;
 
             // Initialize tickers
-            tickers[0] = {start_x, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour / 10, 2, false, 0};
-            tickers[1] = {start_x + hour_num_w, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour % 10, 9, false, 0};
-            
+            tickers[0] = { start_x, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour / 10, 2, false, 0 };
+            tickers[1] = { start_x + hour_num_w, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour % 10, 9, false, 0 };
+
             colon1_x = tickers[1].x + hour_num_w + 5;
-            
-            tickers[2] = {colon1_x + colon_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins / 10, 5, false, 0};
-            tickers[3] = {colon1_x + colon_w + min_num_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins % 10, 9, false, 0};
+
+            tickers[2] = { colon1_x + colon_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins / 10, 5, false, 0 };
+            tickers[3] = { colon1_x + colon_w + min_num_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins % 10, 9, false, 0 };
 
             colon2_x = tickers[3].x + min_num_w + 5;
 
-            tickers[4] = {colon2_x + colon_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs / 10, 5, false, 0};
-            tickers[5] = {colon2_x + colon_w + sec_num_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs % 10, 9, false, 0};
-            
+            tickers[4] = { colon2_x + colon_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs / 10, 5, false, 0 };
+            tickers[5] = { colon2_x + colon_w + sec_num_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs % 10, 9, false, 0 };
+
             colon_y = y_main;
 
             last_time = g_watchface_timeDate.time;
@@ -1829,29 +2007,37 @@ static void VectorScrollWatchface_SEG() {
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
 
         // Update and draw tickers
-        for (int i = 0; i < 6; ++i) {
-            if (i < 2) { // Hours
+        for (int i = 0; i < 6; ++i)
+        {
+            if (i < 2)
+            { // Hours
                 menuSprite.setTextFont(HOUR_FONT);
                 menuSprite.setTextSize(HOUR_SIZE);
-            } else if (i < 4) { // Minutes
+            }
+            else if (i < 4)
+            { // Minutes
                 menuSprite.setTextFont(MINUTE_FONT);
                 menuSprite.setTextSize(MINUTE_SIZE);
-            } else { // Seconds
+            }
+            else
+            { // Seconds
                 menuSprite.setTextFont(SECOND_FONT);
                 menuSprite.setTextSize(SECOND_SIZE);
             }
 
-            if (tickers[i].moving) {
-                int16_t* yPos = &tickers[i].y_pos;
+            if (tickers[i].moving)
+            {
+                int16_t *yPos = &tickers[i].y_pos;
                 int current_h = tickers[i].h;
-                
-                if(*yPos <= 3) (*yPos)++;
-                else if(*yPos <= 6) (*yPos) += 3;
-                else if(*yPos <= 16) (*yPos) += 5;
-                else if(*yPos <= 22) (*yPos) += 3;
-                else if(*yPos <= current_h + TICKER_GAP) (*yPos)++;
-                
-                if (*yPos > current_h + TICKER_GAP) {
+
+                if (*yPos <= 3) (*yPos)++;
+                else if (*yPos <= 6) (*yPos) += 3;
+                else if (*yPos <= 16) (*yPos) += 5;
+                else if (*yPos <= 22) (*yPos) += 3;
+                else if (*yPos <= current_h + TICKER_GAP) (*yPos)++;
+
+                if (*yPos > current_h + TICKER_GAP)
+                {
                     tickers[i].moving = false;
                     tickers[i].y_pos = 0;
                 }
@@ -1863,7 +2049,8 @@ static void VectorScrollWatchface_SEG() {
         menuSprite.setTextFont(COLON_FONT);
         menuSprite.setTextSize(COLON_SIZE);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        if (millis() % 1000 < 500) {
+        if (millis() % 1000 < 500)
+        {
             menuSprite.drawString(":", colon1_x, colon_y);
             menuSprite.drawString(":", colon2_x, colon_y);
         }
@@ -1873,7 +2060,8 @@ static void VectorScrollWatchface_SEG() {
     }
 }
 
-static void VectorScanWatchface_SEG() {
+static void VectorScanWatchface_SEG()
+{
     static time_s last_time;
     static TickerData tickers[6]; // HHMMSS
     static bool firstRun = true;
@@ -1883,10 +2071,13 @@ static void VectorScanWatchface_SEG() {
     static int colon1_x, colon2_x;
     static int colon_y;
 
-    while(1) {
-        if (exitSubMenu) {
+    while (1)
+    {
+        if (exitSubMenu)
+        {
             exitSubMenu = false; // Reset flag
-            if (g_hourlyMusicTaskHandle != NULL) { // Also stop music if playing
+            if (g_hourlyMusicTaskHandle != NULL)
+            { // Also stop music if playing
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1897,8 +2088,10 @@ static void VectorScanWatchface_SEG() {
         if (g_alarm_is_ringing) { return; } // ADDED LINE
         handlePeriodicSync();
         handleHourlyChime();
-        if (readButton()) {
-            if (g_hourlyMusicTaskHandle != NULL) {
+        if (readButton())
+        {
+            if (g_hourlyMusicTaskHandle != NULL)
+            {
                 vTaskDelete(g_hourlyMusicTaskHandle);
                 g_hourlyMusicTaskHandle = NULL;
                 noTone(BUZZER_PIN);
@@ -1915,46 +2108,47 @@ static void VectorScanWatchface_SEG() {
         g_watchface_timeDate.time.mins = timeinfo.tm_min;
         g_watchface_timeDate.time.secs = timeinfo.tm_sec;
 
-        if (firstRun) {
+        if (firstRun)
+        {
             int hour_num_w, hour_num_h, min_num_w, min_num_h, sec_num_w, sec_num_h, colon_w;
 
             menuSprite.setTextFont(HOUR_FONT);
             menuSprite.setTextSize(HOUR_SIZE);
             hour_num_w = menuSprite.textWidth("0");
             hour_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(MINUTE_FONT);
             menuSprite.setTextSize(MINUTE_SIZE);
             min_num_w = menuSprite.textWidth("0");
             min_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(SECOND_FONT);
             menuSprite.setTextSize(SECOND_SIZE);
             sec_num_w = menuSprite.textWidth("0");
             sec_num_h = menuSprite.fontHeight();
-            
+
             menuSprite.setTextFont(COLON_FONT);
             menuSprite.setTextSize(COLON_SIZE);
             colon_w = menuSprite.textWidth(":");
-            
+
             int total_width = (hour_num_w * 2) + colon_w + (min_num_w * 2) + colon_w + (sec_num_w * 2) + 30; // Added some padding
             int start_x = (menuSprite.width() - total_width) / 2;
             y_main = (menuSprite.height() - hour_num_h) / 2;
 
             // Initialize tickers
-            tickers[0] = {start_x, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour / 10, 2, false, 0};
-            tickers[1] = {start_x + hour_num_w + 5, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour % 10, 9, false, 0};
-            
+            tickers[0] = { start_x, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour / 10, 2, false, 0 };
+            tickers[1] = { start_x + hour_num_w + 5, y_main, hour_num_w, hour_num_h, g_watchface_timeDate.time.hour % 10, 9, false, 0 };
+
             colon1_x = tickers[1].x + hour_num_w + 5;
-            
-            tickers[2] = {colon1_x + colon_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins / 10, 5, false, 0};
-            tickers[3] = {colon1_x + colon_w + min_num_w + 5, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins % 10, 9, false, 0};
+
+            tickers[2] = { colon1_x + colon_w, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins / 10, 5, false, 0 };
+            tickers[3] = { colon1_x + colon_w + min_num_w + 5, y_main, min_num_w, min_num_h, g_watchface_timeDate.time.mins % 10, 9, false, 0 };
 
             colon2_x = tickers[3].x + min_num_w + 5;
 
-            tickers[4] = {colon2_x + colon_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs / 10, 5, false, 0};
-            tickers[5] = {colon2_x + colon_w + sec_num_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs % 10, 9, false, 0};
-            
+            tickers[4] = { colon2_x + colon_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs / 10, 5, false, 0 };
+            tickers[5] = { colon2_x + colon_w + sec_num_w, y_main, sec_num_w, sec_num_h, g_watchface_timeDate.time.secs % 10, 9, false, 0 };
+
             colon_y = y_main;
 
             last_time = g_watchface_timeDate.time;
@@ -1979,23 +2173,31 @@ static void VectorScanWatchface_SEG() {
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
 
         // Update and draw tickers
-        for (int i = 0; i < 6; ++i) {
-            if (i < 2) { // Hours
+        for (int i = 0; i < 6; ++i)
+        {
+            if (i < 2)
+            { // Hours
                 menuSprite.setTextFont(HOUR_FONT);
                 menuSprite.setTextSize(HOUR_SIZE);
-            } else if (i < 4) { // Minutes
+            }
+            else if (i < 4)
+            { // Minutes
                 menuSprite.setTextFont(MINUTE_FONT);
                 menuSprite.setTextSize(MINUTE_SIZE);
-            } else { // Seconds
+            }
+            else
+            { // Seconds
                 menuSprite.setTextFont(SECOND_FONT);
                 menuSprite.setTextSize(SECOND_SIZE);
             }
 
-            if (tickers[i].moving) {
+            if (tickers[i].moving)
+            {
                 tickers[i].y_pos += 5;
-                if (tickers[i].y_pos >= tickers[i].h) {
+                if (tickers[i].y_pos >= tickers[i].h)
+                {
                     tickers[i].moving = false;
-                    tickers[i].y_pos = 0; 
+                    tickers[i].y_pos = 0;
                 }
             }
             drawTickerNum(&tickers[i]);
@@ -2005,7 +2207,8 @@ static void VectorScanWatchface_SEG() {
         menuSprite.setTextFont(COLON_FONT);
         menuSprite.setTextSize(COLON_SIZE);
         menuSprite.setTextColor(TIME_MAIN_COLOR, TFT_BLACK);
-        if (millis() % 1000 < 500) {
+        if (millis() % 1000 < 500)
+        {
             menuSprite.drawString(":", colon1_x, colon_y);
             menuSprite.drawString(":", colon2_x, colon_y);
         }
