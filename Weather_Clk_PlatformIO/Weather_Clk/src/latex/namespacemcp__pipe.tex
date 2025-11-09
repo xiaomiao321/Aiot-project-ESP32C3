@@ -1,0 +1,106 @@
+\doxysection{mcp\+\_\+pipe Namespace Reference}
+\hypertarget{namespacemcp__pipe}{}\label{namespacemcp__pipe}\index{mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_a7d38fe04a05a36634f550cf4197e0feb}{connect\+\_\+with\+\_\+retry}} (uri)
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_a74fc4c62d55d9f5f8705e1919aca2021}{connect\+\_\+to\+\_\+server}} (uri)
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_aebb053a2ae608425dae7e9585e64c0e0}{pipe\+\_\+websocket\+\_\+to\+\_\+process}} (websocket, process)
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_a62a837bf7199584f0c4ea6b4595ac720}{pipe\+\_\+process\+\_\+to\+\_\+websocket}} (process, websocket)
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_aa30ab42ad34fdf9dc5a7379fa0dfce23}{pipe\+\_\+process\+\_\+stderr\+\_\+to\+\_\+terminal}} (process)
+\item 
+\mbox{\hyperlink{namespacemcp__pipe_a75c0bffd42ea25a839f05416825659fd}{signal\+\_\+handler}} (sig, frame)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{namespacemcp__pipe_a09cdda4a36b421fdf161b215cbaffab3}\label{namespacemcp__pipe_a09cdda4a36b421fdf161b215cbaffab3} 
+{\bfseries level}
+\item 
+\Hypertarget{namespacemcp__pipe_aedd283b963be9fe878acad694a98d614}\label{namespacemcp__pipe_aedd283b963be9fe878acad694a98d614} 
+{\bfseries format}
+\item 
+\Hypertarget{namespacemcp__pipe_ad291785c1ddbd65b7e96b3c1f71ca323}\label{namespacemcp__pipe_ad291785c1ddbd65b7e96b3c1f71ca323} 
+{\bfseries logger} = logging.\+get\+Logger(\textquotesingle{}MCP\+\_\+\+PIPE\textquotesingle{})
+\item 
+\Hypertarget{namespacemcp__pipe_a629d0d915a9351086f32f7509dc4f7ef}\label{namespacemcp__pipe_a629d0d915a9351086f32f7509dc4f7ef} 
+int {\bfseries INITIAL\+\_\+\+BACKOFF} = 1
+\item 
+\Hypertarget{namespacemcp__pipe_ad7c0373baa00814e4a17eaa18b0f2579}\label{namespacemcp__pipe_ad7c0373baa00814e4a17eaa18b0f2579} 
+int {\bfseries MAX\+\_\+\+BACKOFF} = 600
+\item 
+\Hypertarget{namespacemcp__pipe_a21fa801c615db73d1f9d8a4dc50f5b0d}\label{namespacemcp__pipe_a21fa801c615db73d1f9d8a4dc50f5b0d} 
+int {\bfseries reconnect\+\_\+attempt} = 0
+\item 
+\Hypertarget{namespacemcp__pipe_ada1ff7c0023101757638062d3f3d7d42}\label{namespacemcp__pipe_ada1ff7c0023101757638062d3f3d7d42} 
+int {\bfseries backoff} = INITIAL\+\_\+\+BACKOFF
+\item 
+\Hypertarget{namespacemcp__pipe_a1480be18a17028598503d3af5de9f3b4}\label{namespacemcp__pipe_a1480be18a17028598503d3af5de9f3b4} 
+{\bfseries mcp\+\_\+script} = sys.\+argv\mbox{[}1\mbox{]}
+\item 
+\Hypertarget{namespacemcp__pipe_aa89b6cd32b8e0d820d416f67ffa37122}\label{namespacemcp__pipe_aa89b6cd32b8e0d820d416f67ffa37122} 
+{\bfseries endpoint\+\_\+url} = os.\+environ.\+get(\textquotesingle{}MCP\+\_\+\+ENDPOINT\textquotesingle{})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}此脚本用于连接到MCP服务器，并通过WebSocket端点进行输入输出管道传输。
+版本: 0.1.0
+
+使用方法:
+
+export MCP_ENDPOINT=<mcp_endpoint>  # 设置环境变量
+python mcp_pipe.py <mcp_script>      # 运行脚本并指定要执行的MCP脚本
+\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{namespacemcp__pipe_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespacemcp__pipe_a74fc4c62d55d9f5f8705e1919aca2021}\index{mcp\_pipe@{mcp\_pipe}!connect\_to\_server@{connect\_to\_server}}
+\index{connect\_to\_server@{connect\_to\_server}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{connect\_to\_server()}{connect\_to\_server()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_a74fc4c62d55d9f5f8705e1919aca2021} 
+mcp\+\_\+pipe.\+connect\+\_\+to\+\_\+server (\begin{DoxyParamCaption}\item[{}]{uri}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}连接到WebSocket服务器并建立与mcp_script的双向通信\end{DoxyVerb}
+ \Hypertarget{namespacemcp__pipe_a7d38fe04a05a36634f550cf4197e0feb}\index{mcp\_pipe@{mcp\_pipe}!connect\_with\_retry@{connect\_with\_retry}}
+\index{connect\_with\_retry@{connect\_with\_retry}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{connect\_with\_retry()}{connect\_with\_retry()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_a7d38fe04a05a36634f550cf4197e0feb} 
+mcp\+\_\+pipe.\+connect\+\_\+with\+\_\+retry (\begin{DoxyParamCaption}\item[{}]{uri}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}带重试机制的WebSocket服务器连接函数\end{DoxyVerb}
+ \Hypertarget{namespacemcp__pipe_aa30ab42ad34fdf9dc5a7379fa0dfce23}\index{mcp\_pipe@{mcp\_pipe}!pipe\_process\_stderr\_to\_terminal@{pipe\_process\_stderr\_to\_terminal}}
+\index{pipe\_process\_stderr\_to\_terminal@{pipe\_process\_stderr\_to\_terminal}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{pipe\_process\_stderr\_to\_terminal()}{pipe\_process\_stderr\_to\_terminal()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_aa30ab42ad34fdf9dc5a7379fa0dfce23} 
+mcp\+\_\+pipe.\+pipe\+\_\+process\+\_\+stderr\+\_\+to\+\_\+terminal (\begin{DoxyParamCaption}\item[{}]{process}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}从进程的标准错误读取数据并输出到终端\end{DoxyVerb}
+ \Hypertarget{namespacemcp__pipe_a62a837bf7199584f0c4ea6b4595ac720}\index{mcp\_pipe@{mcp\_pipe}!pipe\_process\_to\_websocket@{pipe\_process\_to\_websocket}}
+\index{pipe\_process\_to\_websocket@{pipe\_process\_to\_websocket}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{pipe\_process\_to\_websocket()}{pipe\_process\_to\_websocket()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_a62a837bf7199584f0c4ea6b4595ac720} 
+mcp\+\_\+pipe.\+pipe\+\_\+process\+\_\+to\+\_\+websocket (\begin{DoxyParamCaption}\item[{}]{process}{, }\item[{}]{websocket}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}从进程的标准输出读取数据并发送到WebSocket\end{DoxyVerb}
+ \Hypertarget{namespacemcp__pipe_aebb053a2ae608425dae7e9585e64c0e0}\index{mcp\_pipe@{mcp\_pipe}!pipe\_websocket\_to\_process@{pipe\_websocket\_to\_process}}
+\index{pipe\_websocket\_to\_process@{pipe\_websocket\_to\_process}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{pipe\_websocket\_to\_process()}{pipe\_websocket\_to\_process()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_aebb053a2ae608425dae7e9585e64c0e0} 
+mcp\+\_\+pipe.\+pipe\+\_\+websocket\+\_\+to\+\_\+process (\begin{DoxyParamCaption}\item[{}]{websocket}{, }\item[{}]{process}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}从WebSocket读取数据并写入进程的标准输入\end{DoxyVerb}
+ \Hypertarget{namespacemcp__pipe_a75c0bffd42ea25a839f05416825659fd}\index{mcp\_pipe@{mcp\_pipe}!signal\_handler@{signal\_handler}}
+\index{signal\_handler@{signal\_handler}!mcp\_pipe@{mcp\_pipe}}
+\doxysubsubsection{\texorpdfstring{signal\_handler()}{signal\_handler()}}
+{\footnotesize\ttfamily \label{namespacemcp__pipe_a75c0bffd42ea25a839f05416825659fd} 
+mcp\+\_\+pipe.\+signal\+\_\+handler (\begin{DoxyParamCaption}\item[{}]{sig}{, }\item[{}]{frame}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}处理中断信号(如Ctrl+C)\end{DoxyVerb}
+ 

@@ -1,0 +1,144 @@
+\doxysection{Buzzer.\+h}
+\hypertarget{_buzzer_8h_source}{}\label{_buzzer_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ BUZZER\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ BUZZER\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#define\ BUZZER\_PIN\ 5}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <Arduino.h>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ 播放模式枚举}}
+\DoxyCodeLine{00009\ \textcolor{keyword}{enum}\ PlayMode}
+\DoxyCodeLine{00010\ \{}
+\DoxyCodeLine{00011\ \ \ SINGLE\_LOOP,\ \ \ \textcolor{comment}{//\ 单曲循环}}
+\DoxyCodeLine{00012\ \ \ LIST\_LOOP,\ \ \ \ \ \textcolor{comment}{//\ 列表播放}}
+\DoxyCodeLine{00013\ \ \ RANDOM\_PLAY\ \ \ \ \textcolor{comment}{//\ 随机播放}}
+\DoxyCodeLine{00014\ \};}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#include\ <TFT\_eSPI.h>}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/cai\_bu\_tou.h"{}}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/cheng\_du.h"{}}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/hai\_kuo\_tian\_kong.h"{}}}
+\DoxyCodeLine{00019\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/hong\_dou.h"{}}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/hou\_lai.h"{}}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/kai\_shi\_dong\_le.h"{}}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/lv\_se.h"{}}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/qing\_hua\_ci.h"{}}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/xin\_qiang.h"{}}}
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/you\_dian\_tian.h"{}}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/chun\_jiao\_yu\_zhi\_ming.h"{}}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Windows.h"{}}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/mi\_ren\_de\_wei\_xian.h"{}}}
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/hong\_se\_gao\_gen\_xie.h"{}}}
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/liang\_zhu.h"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/qi\_feng\_le.h"{}}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/da\_hai.h"{}}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/yu\_jian.h"{}}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Dream\_Wedding.h"{}}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/For\_Elise.h"{}}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/guo\_ji\_ge.h"{}}}
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Turkish\_March.h"{}}}
+\DoxyCodeLine{00038\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ye\_feng\_fei\_wu.h"{}}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/bao\_wei\_huang\_he.h"{}}}
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/bu\_zai\_you\_yu.h"{}}}
+\DoxyCodeLine{00041\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Casablanca.h"{}}}
+\DoxyCodeLine{00042\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/dong\_fang\_zhi\_zhu.h"{}}}
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/fan\_fang\_xiang\_de\_zhong.h"{}}}
+\DoxyCodeLine{00044\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ge\_chang\_zu\_guo.h"{}}}
+\DoxyCodeLine{00045\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/lan\_ting\_xu.h"{}}}
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/tong\_nian.h"{}}}
+\DoxyCodeLine{00047\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/wo\_shi\_yi\_zhi\_xiao\_xiao\_niao.h"{}}}
+\DoxyCodeLine{00048\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/xi\_huan\_ni.h"{}}}
+\DoxyCodeLine{00049\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/yi\_sheng\_you\_ni.h"{}}}
+\DoxyCodeLine{00050\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/zhen\_de\_ai\_ni.h"{}}}
+\DoxyCodeLine{00051\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Fate.h"{}}}
+\DoxyCodeLine{00052\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/Ode\_to\_joy.h"{}}}
+\DoxyCodeLine{00053\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/radetzky\_marsch.h"{}}}
+\DoxyCodeLine{00054\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/qing\_tian.h"{}}}
+\DoxyCodeLine{00055\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/hua\_hai.h"{}}}
+\DoxyCodeLine{00056\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/qi\_li\_xiang.h"{}}}
+\DoxyCodeLine{00057\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/yin\_xing\_de\_chi\_bang.h"{}}}
+\DoxyCodeLine{00058\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/five\_hundred\_miles.h"{}}}
+\DoxyCodeLine{00059\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/dong\_fang\_hong.h"{}}}
+\DoxyCodeLine{00060\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/chong\_er\_fei.h"{}}}
+\DoxyCodeLine{00061\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/fu\_shi\_shan\_xia.h"{}}}
+\DoxyCodeLine{00062\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/jiang\_nan.h"{}}}
+\DoxyCodeLine{00063\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/dao\_xiang.h"{}}}
+\DoxyCodeLine{00064\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/gao\_bai\_qi\_qiu.h"{}}}
+\DoxyCodeLine{00065\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/shi\_nian.h"{}}}
+\DoxyCodeLine{00066\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/xia\_ge\_lu\_kou\_jian.h"{}}}
+\DoxyCodeLine{00067\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/zui\_hou\_yi\_ye.h"{}}}
+\DoxyCodeLine{00068\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ai\_ni.h"{}}}
+\DoxyCodeLine{00069\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ba\_hui\_yi\_pin\_hao\_gei\_ni.h"{}}}
+\DoxyCodeLine{00070\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/bu\_de\_bu\_ai.h"{}}}
+\DoxyCodeLine{00071\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ce\_lian.h"{}}}
+\DoxyCodeLine{00072\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/dong\_xi.h"{}}}
+\DoxyCodeLine{00073\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/he\_tang\_yue\_ye.h"{}}}
+\DoxyCodeLine{00074\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/nan\_fang\_gu\_niang.h"{}}}
+\DoxyCodeLine{00075\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/pi\_pa\_xing.h"{}}}
+\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/shan\_qiu.h"{}}}
+\DoxyCodeLine{00077\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/song\_bie.h"{}}}
+\DoxyCodeLine{00078\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/su\_yan.h"{}}}
+\DoxyCodeLine{00079\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/sugar.h"{}}}
+\DoxyCodeLine{00080\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/yan\_yuan.h"{}}}
+\DoxyCodeLine{00081\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/zhe\_shi\_jie\_na\_mo\_duo\_ren.h"{}}}
+\DoxyCodeLine{00082\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/take\_me\_hand.h"{}}}
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/shape\_of\_you.h"{}}}
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/xiu\_lian\_ai\_qing.h"{}}}
+\DoxyCodeLine{00085\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/gang\_hao\_yu\_jian\_ni.h"{}}}
+\DoxyCodeLine{00086\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ai\_qing\_xun\_xi.h"{}}}
+\DoxyCodeLine{00087\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/a\_peng\_you\_zai\_jian.h"{}}}
+\DoxyCodeLine{00088\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/counting\_stars.h"{}}}
+\DoxyCodeLine{00089\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/dao\_shu.h"{}}}
+\DoxyCodeLine{00090\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/duo\_yuan\_dou\_yao\_zai\_yi\_qi.h"{}}}
+\DoxyCodeLine{00091\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/for\_ya.h"{}}}
+\DoxyCodeLine{00092\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/guang\_hui\_sui\_yue.h"{}}}
+\DoxyCodeLine{00093\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/guo\_huo.h"{}}}
+\DoxyCodeLine{00094\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ke\_bu\_ke\_yi.h"{}}}
+\DoxyCodeLine{00095\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ming\_tian\_hui\_geng\_hao.h"{}}}
+\DoxyCodeLine{00096\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ni\_ruo\_san\_dong.h"{}}}
+\DoxyCodeLine{00097\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/nu\_fang\_de\_sheng\_ming.h"{}}}
+\DoxyCodeLine{00098\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/peng\_you.h"{}}}
+\DoxyCodeLine{00099\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ping\_fan\_zhi\_lu.h"{}}}
+\DoxyCodeLine{00100\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ruo\_shui\_san\_qian.h"{}}}
+\DoxyCodeLine{00101\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/song\_bie.h"{}}}
+\DoxyCodeLine{00102\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/wo\_huai\_nian\_de.h"{}}}
+\DoxyCodeLine{00103\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/xiao\_ping\_guo.h"{}}}
+\DoxyCodeLine{00104\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ye\_qu.h"{}}}
+\DoxyCodeLine{00105\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/yuan\_yang\_xi.h"{}}}
+\DoxyCodeLine{00106\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/zhui\_guang\_zhe.h"{}}}
+\DoxyCodeLine{00107\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/ai\_ru\_chao\_shui.h"{}}}
+\DoxyCodeLine{00108\ \textcolor{preprocessor}{\#include\ "{}Music\_processed/tian\_hei\_hei.h"{}}}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \textcolor{comment}{//\ 歌曲结构体}}
+\DoxyCodeLine{00112\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00113\ \{}
+\DoxyCodeLine{00114\ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *name;}
+\DoxyCodeLine{00115\ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ *melody;}
+\DoxyCodeLine{00116\ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ *durations;}
+\DoxyCodeLine{00117\ \ \ \textcolor{keywordtype}{int}\ length;}
+\DoxyCodeLine{00118\ \ \ \textcolor{keywordtype}{int}\ colorSchemeIndex;}
+\DoxyCodeLine{00119\ \}\ \mbox{\hyperlink{struct_song}{Song}};}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00121\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{struct_song}{Song}}\ songs[]\ PROGMEM;}
+\DoxyCodeLine{00122\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ numSongs;}
+\DoxyCodeLine{00123\ \textcolor{keyword}{extern}\ \textcolor{keyword}{volatile}\ \textcolor{keywordtype}{bool}\ stopBuzzerTask;}
+\DoxyCodeLine{00130\ \textcolor{keywordtype}{void}\ Buzzer\_Task(\textcolor{keywordtype}{void}\ *pvParameters);}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00138\ \textcolor{keywordtype}{void}\ Buzzer\_PlayMusic\_Task(\textcolor{keywordtype}{void}\ *pvParameters);}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00144\ \textcolor{keywordtype}{void}\ Buzzer\_Init();}
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00151\ \textcolor{keywordtype}{void}\ BuzzerMenu();}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00158\ \textcolor{keywordtype}{int}\ findSongIndexByName(\textcolor{keyword}{const}\ String\ \&name);}
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00165\ \textcolor{keywordtype}{void}\ setSongToPlay(\textcolor{keywordtype}{int}\ index);}
+\DoxyCodeLine{00166\ }
+\DoxyCodeLine{00171\ \textcolor{keywordtype}{void}\ playSpecificSong();}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00173\ }
+\DoxyCodeLine{00174\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

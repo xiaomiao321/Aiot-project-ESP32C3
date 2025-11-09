@@ -288,7 +288,7 @@ void parsePCData()
 
   // 蜂鸣器响一声：1kHz，50ms
   tone(BUZZER_PIN, 1000);   // 1kHz
-  delay(50);                // 阻塞50ms
+  vTaskDelay(pdMS_TO_TICKS(50)); // 使用vTaskDelay代替delay，避免阻塞
   noTone(BUZZER_PIN);
 }
 // -----------------------------

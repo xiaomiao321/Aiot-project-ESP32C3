@@ -1,0 +1,28 @@
+var files_dup =
+[
+    [ "ADC.h", "_a_d_c_8h_source.html", null ],
+    [ "Alarm.h", "_alarm_8h_source.html", null ],
+    [ "animation.h", "animation_8h_source.html", null ],
+    [ "Buzzer.h", "_buzzer_8h_source.html", null ],
+    [ "Countdown.h", "_countdown_8h_source.html", null ],
+    [ "DS18B20.h", "_d_s18_b20_8h_source.html", null ],
+    [ "font_12.h", "font__12_8h_source.html", null ],
+    [ "Games.h", "_games_8h_source.html", null ],
+    [ "img.h", "img_8h_source.html", null ],
+    [ "Internet.h", "_internet_8h_source.html", null ],
+    [ "LED.h", "_l_e_d_8h_source.html", null ],
+    [ "Menu.h", "_menu_8h_source.html", null ],
+    [ "MQTT.h", "_m_q_t_t_8h_source.html", null ],
+    [ "MusicMenuLite.h", "_music_menu_lite_8h_source.html", null ],
+    [ "performance.h", "performance_8h_source.html", null ],
+    [ "Pomodoro.h", "_pomodoro_8h_source.html", null ],
+    [ "RotaryEncoder.h", "_rotary_encoder_8h_source.html", null ],
+    [ "space_api.h", "space__api_8h_source.html", null ],
+    [ "space_menu.h", "space__menu_8h_source.html", null ],
+    [ "Stopwatch.h", "_stopwatch_8h_source.html", null ],
+    [ "System.h", "_system_8h_source.html", null ],
+    [ "TargetSettings.h", "_target_settings_8h_source.html", null ],
+    [ "Watchface.h", "_watchface_8h_source.html", null ],
+    [ "weather.h", "weather_8h_source.html", null ],
+    [ "WiFiManager.h", "_wi_fi_manager_8h_source.html", null ]
+];

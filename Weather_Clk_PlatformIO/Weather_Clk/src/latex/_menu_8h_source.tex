@@ -1,0 +1,36 @@
+\doxysection{Menu.\+h}
+\hypertarget{_menu_8h_source}{}\label{_menu_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ MENU\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ MENU\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}RotaryEncoder.h"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <TFT\_eSPI.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}img.h"{}}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}Internet.h"{}}\ \textcolor{comment}{//\ Include\ for\ the\ new\ Internet\ menu}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_menu_item}{MenuItem}}\ \{}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{struct_menu_item_a946950c19be26f9081aff8b1f360438e}{name}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keyword}{const}\ uint16\_t\ *\mbox{\hyperlink{struct_menu_item_a67c2d255a6335e9a8c947cc5d2806dea}{image}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00016\ \ \ \ \ void\ (*\mbox{\hyperlink{struct_menu_item_afafceb100112364d437de1a48c7add45}{action}})();\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00017\ \};}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{comment}{//\ 全局变量的前向声明}}
+\DoxyCodeLine{00020\ \textcolor{keyword}{extern}\ TFT\_eSPI\ tft;}
+\DoxyCodeLine{00021\ \textcolor{keyword}{extern}\ TFT\_eSprite\ menuSprite;}
+\DoxyCodeLine{00022\ \textcolor{keyword}{extern}\ int16\_t\ display;}
+\DoxyCodeLine{00023\ \textcolor{keyword}{extern}\ uint8\_t\ picture\_flag;}
+\DoxyCodeLine{00024\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{struct_menu_item}{MenuItem}}\ menuItems[];}
+\DoxyCodeLine{00025\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ uint8\_t\ MENU\_ITEM\_COUNT;}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00034\ \textcolor{keywordtype}{void}\ showMenu();}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00041\ \textcolor{keywordtype}{void}\ showMenuConfig();}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{float}\ easeOutQuad(\textcolor{keywordtype}{float}\ t);}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ MENU\_H}}
+\DoxyCodeLine{00052\ }
+
+\end{DoxyCode}

@@ -1,0 +1,92 @@
+\doxysection{mcpmqtt.\+Device\+Controller Class Reference}
+\hypertarget{classmcpmqtt_1_1_device_controller}{}\label{classmcpmqtt_1_1_device_controller}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_a111134aba9e771d4cb1a4570e38f384b}{\+\_\+\+\_\+init\+\_\+\+\_\+}} (self)
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_abc82a4f63bdbcf8a6173fae4ff8053bc}{send\+\_\+raw\+\_\+command}} (self, str command)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classmcpmqtt_1_1_device_controller_a78801b1ff3e653450ce2b18aa4e9188b}\label{classmcpmqtt_1_1_device_controller_a78801b1ff3e653450ce2b18aa4e9188b} 
+{\bfseries mqtt\+\_\+client} = None
+\item 
+\Hypertarget{classmcpmqtt_1_1_device_controller_a4bd07922e4a93211b849e449a1cdca76}\label{classmcpmqtt_1_1_device_controller_a4bd07922e4a93211b849e449a1cdca76} 
+bool {\bfseries connected} = False
+\item 
+\Hypertarget{classmcpmqtt_1_1_device_controller_ad24aca21b57c0204bbcf5d91ce011c8b}\label{classmcpmqtt_1_1_device_controller_ad24aca21b57c0204bbcf5d91ce011c8b} 
+{\bfseries lock} = threading.\+Lock()
+\item 
+\Hypertarget{classmcpmqtt_1_1_device_controller_aab8a5256afd0bf16d35885bb8917294b}\label{classmcpmqtt_1_1_device_controller_aab8a5256afd0bf16d35885bb8917294b} 
+{\bfseries mqtt\+\_\+thread} = threading.\+Thread(target=self.\+\_\+run\+\_\+mqtt\+\_\+client, daemon=True)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_a60827510d352706482a0abc61b6654e6}{\+\_\+init\+\_\+mqtt\+\_\+client}} (self)
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_ae5a3b9dbe3ddde7b866485b6318dcedc}{\+\_\+run\+\_\+mqtt\+\_\+client}} (self)
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_a598de18cd25afe2b8979cdee17b3697b}{\+\_\+on\+\_\+mqtt\+\_\+connect}} (self, client, userdata, flags, rc)
+\item 
+\mbox{\hyperlink{classmcpmqtt_1_1_device_controller_a3f515d2f14bdc5cb8141b594733a93e3}{\+\_\+on\+\_\+mqtt\+\_\+disconnect}} (self, client, userdata, rc)
+\end{DoxyCompactItemize}
+
+
+\label{doc-constructors}
+\Hypertarget{classmcpmqtt_1_1_device_controller_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classmcpmqtt_1_1_device_controller_a111134aba9e771d4cb1a4570e38f384b}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!\_\_init\_\_@{\_\_init\_\_}}
+\index{\_\_init\_\_@{\_\_init\_\_}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{\_\_init\_\_()}{\_\_init\_\_()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_a111134aba9e771d4cb1a4570e38f384b} 
+mcpmqtt.\+Device\+Controller.\+\_\+\+\_\+init\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{}]{self}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}初始化设备控制器\end{DoxyVerb}
+ 
+
+\label{doc-func-members}
+\Hypertarget{classmcpmqtt_1_1_device_controller_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classmcpmqtt_1_1_device_controller_a60827510d352706482a0abc61b6654e6}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!\_init\_mqtt\_client@{\_init\_mqtt\_client}}
+\index{\_init\_mqtt\_client@{\_init\_mqtt\_client}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{\_init\_mqtt\_client()}{\_init\_mqtt\_client()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_a60827510d352706482a0abc61b6654e6} 
+mcpmqtt.\+Device\+Controller.\+\_\+init\+\_\+mqtt\+\_\+client (\begin{DoxyParamCaption}\item[{}]{self}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+\begin{DoxyVerb}初始化MQTT客户端\end{DoxyVerb}
+ \Hypertarget{classmcpmqtt_1_1_device_controller_a598de18cd25afe2b8979cdee17b3697b}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!\_on\_mqtt\_connect@{\_on\_mqtt\_connect}}
+\index{\_on\_mqtt\_connect@{\_on\_mqtt\_connect}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{\_on\_mqtt\_connect()}{\_on\_mqtt\_connect()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_a598de18cd25afe2b8979cdee17b3697b} 
+mcpmqtt.\+Device\+Controller.\+\_\+on\+\_\+mqtt\+\_\+connect (\begin{DoxyParamCaption}\item[{}]{self}{, }\item[{}]{client}{, }\item[{}]{userdata}{, }\item[{}]{flags}{, }\item[{}]{rc}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+\begin{DoxyVerb}MQTT连接回调\end{DoxyVerb}
+ \Hypertarget{classmcpmqtt_1_1_device_controller_a3f515d2f14bdc5cb8141b594733a93e3}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!\_on\_mqtt\_disconnect@{\_on\_mqtt\_disconnect}}
+\index{\_on\_mqtt\_disconnect@{\_on\_mqtt\_disconnect}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{\_on\_mqtt\_disconnect()}{\_on\_mqtt\_disconnect()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_a3f515d2f14bdc5cb8141b594733a93e3} 
+mcpmqtt.\+Device\+Controller.\+\_\+on\+\_\+mqtt\+\_\+disconnect (\begin{DoxyParamCaption}\item[{}]{self}{, }\item[{}]{client}{, }\item[{}]{userdata}{, }\item[{}]{rc}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+\begin{DoxyVerb}MQTT断开连接回调\end{DoxyVerb}
+ \Hypertarget{classmcpmqtt_1_1_device_controller_ae5a3b9dbe3ddde7b866485b6318dcedc}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!\_run\_mqtt\_client@{\_run\_mqtt\_client}}
+\index{\_run\_mqtt\_client@{\_run\_mqtt\_client}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{\_run\_mqtt\_client()}{\_run\_mqtt\_client()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_ae5a3b9dbe3ddde7b866485b6318dcedc} 
+mcpmqtt.\+Device\+Controller.\+\_\+run\+\_\+mqtt\+\_\+client (\begin{DoxyParamCaption}\item[{}]{self}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+\begin{DoxyVerb}在独立线程中运行MQTT客户端\end{DoxyVerb}
+ \Hypertarget{classmcpmqtt_1_1_device_controller_abc82a4f63bdbcf8a6173fae4ff8053bc}\index{mcpmqtt.DeviceController@{mcpmqtt.DeviceController}!send\_raw\_command@{send\_raw\_command}}
+\index{send\_raw\_command@{send\_raw\_command}!mcpmqtt.DeviceController@{mcpmqtt.DeviceController}}
+\doxysubsubsection{\texorpdfstring{send\_raw\_command()}{send\_raw\_command()}}
+{\footnotesize\ttfamily \label{classmcpmqtt_1_1_device_controller_abc82a4f63bdbcf8a6173fae4ff8053bc} 
+mcpmqtt.\+Device\+Controller.\+send\+\_\+raw\+\_\+command (\begin{DoxyParamCaption}\item[{}]{self}{, }\item[{str}]{command}{}\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}发送原始字符串命令到MQTT主题\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+mcpmqtt.\+py\end{DoxyCompactItemize}

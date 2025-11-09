@@ -1,0 +1,37 @@
+\doxysection{Alarm.\+h}
+\hypertarget{_alarm_8h_source}{}\label{_alarm_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ALARM\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ALARM\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdint.h>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{extern}\ \textcolor{keyword}{volatile}\ \textcolor{keywordtype}{bool}\ g\_alarm\_is\_ringing;\ \textcolor{comment}{//\ Make\ this\ global\ flag\ accessible}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ Moved\ from\ .cpp\ to\ be\ public}}
+\DoxyCodeLine{00009\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_alarm_setting}{AlarmSetting}}\ \{}
+\DoxyCodeLine{00010\ \ \ uint8\_t\ hour;}
+\DoxyCodeLine{00011\ \ \ uint8\_t\ minute;}
+\DoxyCodeLine{00012\ \ \ uint8\_t\ days\_of\_week;}
+\DoxyCodeLine{00013\ \ \ \textcolor{keywordtype}{bool}\ enabled;}
+\DoxyCodeLine{00014\ \ \ \textcolor{keywordtype}{bool}\ triggered\_today;}
+\DoxyCodeLine{00015\ \};}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00022\ \textcolor{keywordtype}{void}\ Alarm\_Init();}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00029\ \textcolor{keywordtype}{void}\ AlarmMenu();}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00036\ \textcolor{keywordtype}{void}\ Alarm\_Loop\_Check();}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00043\ \textcolor{keywordtype}{void}\ Alarm\_ShowRingingScreen();}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{void}\ Alarm\_StopMusic();}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00055\ \textcolor{keywordtype}{int}\ getAlarmCount();}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00063\ \textcolor{keywordtype}{bool}\ getAlarmInfo(\textcolor{keywordtype}{int}\ index,\ \mbox{\hyperlink{struct_alarm_setting}{AlarmSetting}}\&\ settings);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ ALARM\_H}}
+
+\end{DoxyCode}
