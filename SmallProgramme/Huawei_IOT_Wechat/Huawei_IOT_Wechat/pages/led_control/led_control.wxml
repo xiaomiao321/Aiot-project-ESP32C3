@@ -1,0 +1,52 @@
+<view class="container">
+  <!-- 消息提示栏 -->
+  <view class="message-panel">
+    <text class="message-text">{{result}}</text>
+  </view>
+
+  <view class="led-grid-container">
+    <!-- Manually placing LEDs according to the grid-template-areas -->
+    <view class="led-item led-pos-0 {{leds[0].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="0">0</view>
+    <view class="led-item led-pos-1 {{leds[1].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="1">1</view>
+    <view class="led-item led-pos-2 {{leds[2].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="2">2</view>
+    <view class="led-item led-pos-3 {{leds[3].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="3">3</view>
+    <view class="led-item led-pos-4 {{leds[4].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="4">4</view>
+    <view class="led-item led-pos-5 {{leds[5].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="5">5</view>
+    <view class="led-item led-pos-6 {{leds[6].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="6">6</view>
+    <view class="led-item led-pos-7 {{leds[7].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="7">7</view>
+    <view class="led-item led-pos-8 {{leds[8].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="8">8</view>
+    <view class="led-item led-pos-9 {{leds[9].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="9">9</view>
+  </view>
+
+  <!-- RGB控制 -->
+  <view class="led-container">
+    <view class="led-display" style="background-color: {{ledColor}};"></view>
+  </view>
+
+  <view class="slider-panel">
+    <view class="slider-group">
+      <text class="slider-label">红 (R)</text>
+      <slider bindchange="slider1change" activeColor="#ff4a4a" min="0" max="255" show-value block-size="22" block-color="#fff" color="#444"/>
+    </view>
+    <view class="slider-group">
+      <text class="slider-label">蓝 (B)</text>
+      <slider bindchange="slider2change" activeColor="#4a4aff" min="0" max="255" show-value block-size="22" block-color="#fff" color="#444"/>
+    </view>
+    <view class="slider-group">
+      <text class="slider-label">绿 (G)</text>
+      <slider bindchange="slider3change" activeColor="#4aff4a" min="0" max="255" show-value block-size="22" block-color="#fff" color="#444"/>
+    </view>
+  </view>
+
+  <!-- 新的按钮布局 -->
+  <view class="button-panel">
+    <view class="button-group">
+      <button class="btn-half" type="primary" bindtap="setSingleLedColor">设置单灯颜色</button>
+      <button class="btn-half" type="primary" bindtap="setAllLedsColor">设置所有灯颜色</button>
+    </view>
+    <view class="button-group">
+      <button class="btn-half" bindtap="startRainbowMode">启动彩虹模式</button>
+      <button class="btn-half" type="warn" bindtap="turnAllOff">全部关闭</button>
+    </view>
+  </view>
+</view>

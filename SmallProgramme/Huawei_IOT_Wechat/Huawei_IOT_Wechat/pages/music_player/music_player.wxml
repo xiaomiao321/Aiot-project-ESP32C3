@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="song-list">
+    <view wx:for="{{songs}}" wx:key="id" class="song-item {{index === selectedSongIndex ? 'selected' : ''}}" bindtap="selectSong" data-index="{{index}}">
+      <text class="song-name">{{item.name}}</text>
+      <text class="song-artist">{{item.artist}}</text>
+    </view>
+  </view>
+  <view class="picker-container">
+    <picker bindchange="bindPickerChange" value="{{selectedUiModeIndex}}" range="{{uiModes}}">
+      <view class="picker">
+        UI模式：{{uiModes[selectedUiModeIndex]}}
+      </view>
+    </picker>
+  </view>
+  <button type="primary" bindtap="sendCommand">下发命令</button>
+</view>

@@ -1,0 +1,157 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30rpx 20rpx;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 新增：消息提示栏 */
+.message-panel {
+  width: 95%;
+  min-height: 40rpx;
+  background-color: #1e1e1e;
+  border-radius: 16rpx;
+  padding: 15rpx 20rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.message-text {
+  color: #ddd;
+  font-size: 26rpx;
+  text-align: center;
+  word-break: break-all;
+}
+
+.led-grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 60px);
+  grid-template-rows: repeat(4, 60px);
+  gap: 10px;
+  margin-bottom: 20rpx;
+  grid-template-areas:
+    ". led9 led0 ."
+    "led8 . . led1"
+    "led7 . . led2"
+    "led6 led5 led4 led3";
+}
+
+.led-item {
+  width: 60px;
+  height: 60px;
+  border: 1px solid #333;
+  background-color: #2a2a2a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24rpx;
+  color: #aaa;
+  box-sizing: border-box;
+  border-radius: 12rpx;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.led-pos-0 { grid-area: led0; }
+.led-pos-1 { grid-area: led1; }
+.led-pos-2 { grid-area: led2; }
+.led-pos-3 { grid-area: led3; }
+.led-pos-4 { grid-area: led4; }
+.led-pos-5 { grid-area: led5; }
+.led-pos-6 { grid-area: led6; }
+.led-pos-7 { grid-area: led7; }
+.led-pos-8 { grid-area: led8; }
+.led-pos-9 { grid-area: led9; }
+
+.led-on {
+  background-color: #00ff00;
+  border: 1px solid #00cc00;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+.picker-container {
+  width: 95%;
+  margin-bottom: 20rpx;
+}
+
+.picker {
+  padding: 20rpx;
+  border: 1px solid #333;
+  border-radius: 24rpx;
+  text-align: center;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+button {
+  width: 95%;
+  border-radius: 24rpx !important;
+  font-weight: bold;
+}
+
+/* --- 新增：从设备页面迁移过来的样式 --- */
+
+/* LED 显示 */
+.led-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20rpx 0;
+}
+.led-display {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  border: 4rpx solid #333;
+  box-shadow: 0 0 40rpx rgba(0, 0, 0, 0.5);
+  transition: background-color 0.3s ease;
+}
+
+/* 滑块控制 */
+.slider-panel {
+  width: 95%;
+  background-color: #1e1e1e;
+  border-radius: 24rpx;
+  padding: 30rpx 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.slider-group {
+  margin-bottom: 10rpx;
+}
+
+.slider-label {
+  font-size: 28rpx;
+  color: #aaa;
+  margin-left: 10rpx;
+}
+
+slider {
+  margin: 20rpx 5rpx;
+}
+
+/* 按钮操作 */
+.button-panel {
+  width: 95%;
+  display: flex;
+  flex-direction: column;
+  gap: 25rpx;
+}
+
+.btn-half {
+  border-radius: 24rpx !important;
+  font-weight: bold;
+  flex: 1;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: row;
+  gap: 25rpx;
+  width: 100%;
+}
