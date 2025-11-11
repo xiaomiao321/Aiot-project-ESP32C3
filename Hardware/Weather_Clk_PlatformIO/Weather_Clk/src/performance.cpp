@@ -91,7 +91,7 @@ void drawPerformanceStaticElements()
 
   tft.fillCircle(LEGEND_X_START + LEGEND_SPACING_WIDE, LEGEND_Y_POS + LEGEND_LINE_HEIGHT, LEGEND_RADIUS, TFT_ORANGE);
   tft.setTextColor(TFT_ORANGE, BG_COLOR);
-  tft.drawString("GPU Temp", LEGEND_X_START + LEGEND_SPACING_WIDE + LEGEND_TEXT_OFFSET, LEGEND_Y_POS + LEGEND_LINE_HEIGHT);
+  tft.drawString("ESP Temp", LEGEND_X_START + LEGEND_SPACING_WIDE + LEGEND_TEXT_OFFSET, LEGEND_Y_POS + LEGEND_LINE_HEIGHT);
 
   // 绘制坐标轴数值
   tft.setTextColor(TITLE_COLOR, BG_COLOR);
@@ -113,63 +113,63 @@ void drawPerformanceStaticElements()
  */
 void updatePerformanceData()
 {
-    struct PCData localPcData;
+  struct PCData localPcData;
 
-    // 使用互斥锁安全地复制共享数据
-    if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t)10) == pdTRUE)
-    {
-        localPcData = pcData;
-        xSemaphoreGive(pcDataMutex);
-    }
-    else
-    {
-        return; 
-    }
+  // 使用互斥锁安全地复制共享数据
+  if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t) 10) == pdTRUE)
+  {
+    localPcData = pcData;
+    xSemaphoreGive(pcDataMutex);
+  }
+  else
+  {
+    return;
+  }
 
-    tft.startWrite();
-    tft.setTextColor(VALUE_COLOR, BG_COLOR);
-    tft.setTextFont(1);
-    tft.setTextSize(2);
+  tft.startWrite();
+  tft.setTextColor(VALUE_COLOR, BG_COLOR);
+  tft.setTextFont(1);
+  tft.setTextSize(2);
 
-    // 清除旧数据并绘制新数据
-    // CPU
-    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-    tft.setTextColor(TFT_GREEN, BG_COLOR);
-    tft.drawString(String(localPcData.cpuLoad) + "% " + String(localPcData.cpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y);
+  // 清除旧数据并绘制新数据
+  // CPU
+  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+  tft.setTextColor(TFT_GREEN, BG_COLOR);
+  tft.drawString(String(localPcData.cpuLoad) + "% " + String(localPcData.cpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y);
 
-    // GPU
-    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-    tft.setTextColor(TFT_BLUE, BG_COLOR);
-    tft.drawString(String(localPcData.gpuLoad) + "% " + String(localPcData.gpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT);
+  // GPU
+  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+  tft.setTextColor(TFT_BLUE, BG_COLOR);
+  tft.drawString(String(localPcData.gpuLoad) + "% " + String(localPcData.gpuTemp) + "C", DATA_X + VALUE_OFFSET_X, DATA_Y + LINE_HEIGHT);
 
-    // RAM
-    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-    tft.setTextColor(TFT_RED, BG_COLOR);
-    tft.drawString(String(localPcData.ramLoad, 1) + "%", DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT);
+  // RAM
+  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+  tft.setTextColor(TFT_RED, BG_COLOR);
+  tft.drawString(String(localPcData.ramLoad, 1) + "%", DATA_X + VALUE_OFFSET_X, DATA_Y + 2 * LINE_HEIGHT);
 
-    // ESP32 温度
-    tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
-    tft.setTextColor(TFT_ORANGE, BG_COLOR);
-    tft.drawString(String(esp32c3_temp, 1) + " C", DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT);
+  // ESP32 温度
+  tft.fillRect(DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT, VALUE_WIDTH, LINE_HEIGHT, BG_COLOR);
+  tft.setTextColor(TFT_ORANGE, BG_COLOR);
+  tft.drawString(String(esp32c3_temp, 1) + " C", DATA_X + VALUE_OFFSET_X, DATA_Y + 3 * LINE_HEIGHT);
 
-    // 更新图表
-    static float gx = 0.0; // 图表X轴当前位置
-    cpuLoadTrace.addPoint(gx, localPcData.cpuLoad);
-    gpuLoadTrace.addPoint(gx, localPcData.gpuLoad);
-    cpuTempTrace.addPoint(gx, localPcData.ramLoad); // 注意：这里绘制的是RAM使用率
-    gpuTempTrace.addPoint(gx, localPcData.gpuTemp);
-    gx += 1.0;
-    if (gx > 100.0)
-    { // 如果图表画满了
-        gx = 0.0;
-        combinedChart.drawGraph(COMBINED_CHART_X, COMBINED_CHART_Y); // 重绘图表背景
-        // 重新开始描线
-        cpuLoadTrace.startTrace(TFT_GREEN);
-        gpuLoadTrace.startTrace(TFT_BLUE);
-        cpuTempTrace.startTrace(TFT_RED);
-        gpuTempTrace.startTrace(TFT_ORANGE);
-    }
-    tft.endWrite();
+  // 更新图表
+  static float gx = 0.0; // 图表X轴当前位置
+  cpuLoadTrace.addPoint(gx, localPcData.cpuLoad);
+  gpuLoadTrace.addPoint(gx, localPcData.gpuLoad);
+  cpuTempTrace.addPoint(gx, localPcData.ramLoad); // 注意：这里绘制的是RAM使用率
+  gpuTempTrace.addPoint(gx, esp32c3_temp);
+  gx += 1.0;
+  if (gx > 100.0)
+  { // 如果图表画满了
+    gx = 0.0;
+    combinedChart.drawGraph(COMBINED_CHART_X, COMBINED_CHART_Y); // 重绘图表背景
+    // 重新开始描线
+    cpuLoadTrace.startTrace(TFT_GREEN);
+    gpuLoadTrace.startTrace(TFT_BLUE);
+    cpuTempTrace.startTrace(TFT_RED);
+    gpuTempTrace.startTrace(TFT_ORANGE);
+  }
+  tft.endWrite();
 }
 
 /**
@@ -187,43 +187,49 @@ void resetBuffer()
  */
 void parsePCData()
 {
-    struct PCData parsedValues;
-    memset(&parsedValues, 0, sizeof(parsedValues));
-    parsedValues.valid = false;
+  struct PCData parsedValues;
+  memset(&parsedValues, 0, sizeof(parsedValues));
+  parsedValues.valid = false;
 
-    char *ptr;
+  char *ptr;
 
-    ptr = strstr(inputBuffer, "CCc ");
-    if (ptr) { parsedValues.cpuLoad = atoi(ptr + 4); }
+  ptr = strstr(inputBuffer, "CCc ");
+  if (ptr) { parsedValues.cpuLoad = atoi(ptr + 4); }
 
-    ptr = strstr(inputBuffer, "G");
-    if (ptr && ptr[1] >= '0' && ptr[1] <= '9') {
-        char *cPos = strchr(ptr, 'c');
-        if (cPos) {
-            parsedValues.gpuTemp = atoi(ptr + 1);
-            parsedValues.gpuLoad = atoi(cPos + 1);
-        }
-    }
+  ptr = strstr(inputBuffer, "CTt ");
+  if (ptr) { parsedValues.cpuTemp = atoi(ptr + 4); }
 
-    ptr = strstr(inputBuffer, "RL");
-    if (ptr) { parsedValues.ramLoad = atof(ptr + 2); }
-
-    if (parsedValues.cpuLoad > 0 || parsedValues.gpuTemp > 0 || parsedValues.ramLoad > 0) {
-        parsedValues.valid = true;
-    }
-
-    // 使用互斥锁安全地更新全局结构体
-    if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t)10) == pdTRUE)
+  ptr = strstr(inputBuffer, "G");
+  if (ptr && ptr[1] >= '0' && ptr[1] <= '9')
+  {
+    char *cPos = strchr(ptr, 'c');
+    if (cPos)
     {
-        // 仅更新解析出的值，保留固定的名称
-        pcData.cpuLoad = parsedValues.cpuLoad;
-        pcData.cpuTemp = parsedValues.cpuTemp;
-        pcData.gpuLoad = parsedValues.gpuLoad;
-        pcData.gpuTemp = parsedValues.gpuTemp;
-        pcData.ramLoad = parsedValues.ramLoad;
-        pcData.valid = parsedValues.valid;
-        xSemaphoreGive(pcDataMutex);
+      parsedValues.gpuTemp = atoi(ptr + 1);
+      parsedValues.gpuLoad = atoi(cPos + 1);
     }
+  }
+
+  ptr = strstr(inputBuffer, "RL");
+  if (ptr) { parsedValues.ramLoad = atof(ptr + 2); }
+
+  if (parsedValues.cpuLoad > 0 || parsedValues.gpuTemp > 0 || parsedValues.ramLoad > 0)
+  {
+    parsedValues.valid = true;
+  }
+
+  // 使用互斥锁安全地更新全局结构体
+  if (pcDataMutex != NULL && xSemaphoreTake(pcDataMutex, (TickType_t) 10) == pdTRUE)
+  {
+    // 仅更新解析出的值，保留固定的名称
+    pcData.cpuLoad = parsedValues.cpuLoad;
+    pcData.cpuTemp = parsedValues.cpuTemp;
+    pcData.gpuLoad = parsedValues.gpuLoad;
+    pcData.gpuTemp = parsedValues.gpuTemp;
+    pcData.ramLoad = parsedValues.ramLoad;
+    pcData.valid = parsedValues.valid;
+    xSemaphoreGive(pcDataMutex);
+  }
 }
 
 
@@ -235,7 +241,7 @@ void Performance_Task(void *pvParameters)
 {
   for (;;)
   {
-    esp32c3_temp = temperatureRead();
+    // esp32c3_temp = temperatureRead();
     updatePerformanceData();
     vTaskDelay(pdMS_TO_TICKS(500)); // 每500ms更新一次
   }
@@ -248,6 +254,7 @@ void Performance_Task(void *pvParameters)
  */
 void SERIAL_Task(void *pvParameters)
 {
+  esp32c3_temp = temperatureRead();
   PCData_Init(&pcData);
   unsigned long lastCharTime = 0;
   for (;;)
@@ -286,8 +293,8 @@ void SERIAL_Task(void *pvParameters)
 
 void startPerformanceMonitoring()
 {
-    pcDataMutex = xSemaphoreCreateMutex();
-    xTaskCreatePinnedToCore(SERIAL_Task, "Serial_Rx", 2048, NULL, 1, NULL, 0);
+  pcDataMutex = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(SERIAL_Task, "Serial_Rx", 2048, NULL, 3, NULL, 0);
 }
 
 /**

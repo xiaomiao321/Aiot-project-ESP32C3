@@ -67,45 +67,45 @@ void setupMQTT()
  */
 void MQTT_Task(void *pvParameters)
 {
-    long lastReportTime = 0;
+  long lastReportTime = 0;
 
-    for(;;)
+  for (;;)
+  {
+    // 检查WiFi和MQTT连接，如果断开则循环重连
+    if (!client.connected())
     {
-        // 检查WiFi和MQTT连接，如果断开则循环重连
-        if (!client.connected())
+      Serial.println("MQTT断开连接，尝试重连...");
+      while (!client.connected())
+      {
+        if (client.connect(CLIENT_ID, MQTT_USER, MQTT_PASSWORD))
         {
-            Serial.println("MQTT断开连接，尝试重连...");
-            while (!client.connected()) 
-            {
-                if (client.connect(CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) 
-                {
-                    Serial.println("MQTT连接成功!");
-                    // 重新订阅主题
-                    client.subscribe(MQTT_TOPIC_COMMANDS);
-                    client.subscribe(MQTT_TOPIC_GET);
-                } 
-                else 
-                {
-                    Serial.printf("MQTT连接失败, rc=%d. 3秒后重试\n", client.state());
-                    // 等待3秒再重试，避免频繁失败导致系统不稳定
-                    vTaskDelay(pdMS_TO_TICKS(3000));
-                }
-            }
+          Serial.println("MQTT连接成功!");
+          // 重新订阅主题
+          client.subscribe(MQTT_TOPIC_COMMANDS);
+          client.subscribe(MQTT_TOPIC_GET);
         }
-
-        // 保持客户端心跳和处理传入消息
-        client.loop();
-
-        // 定时上报数据(每5秒)
-        if (millis() - lastReportTime > 5000)
+        else
         {
-            lastReportTime = millis();
-            publishData(g_currentTemperature, &pcData, g_lux);
+          Serial.printf("MQTT连接失败, rc=%d. 3秒后重试\n", client.state());
+          // 等待3秒再重试，避免频繁失败导致系统不稳定
+          vTaskDelay(pdMS_TO_TICKS(3000));
         }
-
-        // 短暂延时，让出CPU给其他任务
-        vTaskDelay(pdMS_TO_TICKS(10));
+      }
     }
+
+    // 保持客户端心跳和处理传入消息
+    client.loop();
+
+    // 定时上报数据(每1秒)
+    if (millis() - lastReportTime > 1000)
+    {
+      lastReportTime = millis();
+      publishData(g_currentTemperature, &pcData, g_lux);
+    }
+
+    // 短暂延时，让出CPU给其他任务
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }
 
 
@@ -130,10 +130,10 @@ void connectMQTT()
   int wait_time = 0;
   while (!client.connected() && wait_time < 15000) // 最多等待15秒
   {
-      tft.drawRect(20, tft.height() - 20, 202, 17, TFT_WHITE);
-      tft.fillRect(21, tft.height() - 18, (wait_time / 1000) * (200 / 15), 13, TFT_GREEN);
-      vTaskDelay(pdMS_TO_TICKS(100));
-      wait_time += 100;
+    tft.drawRect(20, tft.height() - 20, 202, 17, TFT_WHITE);
+    tft.fillRect(21, tft.height() - 18, (wait_time / 1000) * (200 / 15), 13, TFT_GREEN);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    wait_time += 100;
   }
 
   if (client.connected())
@@ -154,14 +154,14 @@ void connectMQTT()
 void publishData(float Temp, struct PCData *pcdata, float lux)
 {
   Time++;
-  
-  char properties[256]; 
-  char jsonBuf[300]; 
-  sprintf(properties, "\"Temperature\":%.2f,\"Time\":%ld,\"Lux\":%.2f,\"GPULoad\":%d,\"CPULoad\":%d,\"GPUTemp\":%d,\"RAMLoad\":%.1f,\"ESP32Temp\":%.1f", 
-            Temp, Time, lux, pcdata->gpuLoad, pcdata->cpuLoad, pcdata->gpuTemp, pcdata->ramLoad, esp32c3_temp);
+
+  char properties[256];
+  char jsonBuf[300];
+  sprintf(properties, "\"Temperature\":%.2f,\"Time\":%ld,\"Lux\":%.2f,\"GPULoad\":%d,\"CPULoad\":%d,\"GPUTemp\":%d,\"RAMLoad\":%.1f,\"ESP32Temp\":%.1f",
+    Temp, Time, lux, pcdata->gpuLoad, pcdata->cpuLoad, pcdata->gpuTemp, pcdata->ramLoad, esp32c3_temp);
   sprintf(jsonBuf, MQTT_BODY_FORMAT, properties);
 
-  if(client.publish(MQTT_TOPIC_REPORT, jsonBuf))
+  if (client.publish(MQTT_TOPIC_REPORT, jsonBuf))
   {
     Serial.println("上报数据:");
     Serial.println(jsonBuf);
@@ -198,64 +198,76 @@ void callback(char *topic, byte *payload, unsigned int length)
       return;
     }
 
-    const char* command_name = doc["command_name"];
+    const char *command_name = doc["command_name"];
     JsonObject paras = doc["paras"];
 
     if (command_name && strcmp(command_name, "RGB") == 0)
     {
-        const char* mode = paras["mode"];
+      const char *mode = paras["mode"];
 
-        if (strcmp(mode, "single") == 0) {
-            int index = paras["index"];
-            int r = paras["Red"];
-            int g = paras["Green"];
-            int b = paras["Blue"];
-            led_set_single(index, r, g, b);
-        } else if (strcmp(mode, "all") == 0) {
-            int r = paras["Red"];
-            int g = paras["Green"];
-            int b = paras["Blue"];
-            led_set_all(r, g, b);
-        } else if (strcmp(mode, "rainbow") == 0) {
-            uint16_t speed = paras["speed"] | 20; // Default to 20 if not provided
-            led_rainbow_mode(speed);
-        } else if (strcmp(mode, "off") == 0) {
-            led_off();
-        }
+      if (strcmp(mode, "single") == 0)
+      {
+        int index = paras["index"];
+        int r = paras["Red"];
+        int g = paras["Green"];
+        int b = paras["Blue"];
+        led_set_single(index, r, g, b);
+      }
+      else if (strcmp(mode, "all") == 0)
+      {
+        int r = paras["Red"];
+        int g = paras["Green"];
+        int b = paras["Blue"];
+        led_set_all(r, g, b);
+      }
+      else if (strcmp(mode, "rainbow") == 0)
+      {
+        uint16_t speed = paras["speed"] | 20; // Default to 20 if not provided
+        led_rainbow_mode(speed);
+      }
+      else if (strcmp(mode, "off") == 0)
+      {
+        led_off();
+      }
     }
     else if (command_name && strcmp(command_name, "Alarm") == 0)
     {
-        uint8_t hour = paras["Hour"];
-        uint8_t minute = paras["Minute"];
-        const char* week_str = paras["Week"];
-        bool enabled = paras["On"];
-        
-        uint8_t days_mask = 0;
-        if (strcmp(week_str, "Sunday") == 0) days_mask = (1 << 0);
-        else if (strcmp(week_str, "Monday") == 0) days_mask = (1 << 1);
-        else if (strcmp(week_str, "Tuesday") == 0) days_mask = (1 << 2);
-        else if (strcmp(week_str, "Wednesday") == 0) days_mask = (1 << 3);
-        else if (strcmp(week_str, "Thursday") == 0) days_mask = (1 << 4);
-        else if (strcmp(week_str, "Friday") == 0) days_mask = (1 << 5);
-        else if (strcmp(week_str, "Saturday") == 0) days_mask = (1 << 6);
+      uint8_t hour = paras["Hour"];
+      uint8_t minute = paras["Minute"];
+      const char *week_str = paras["Week"];
+      bool enabled = paras["On"];
 
-        // For now, update alarm at index 0
-        Alarm_Update(0, hour, minute, days_mask, enabled);
+      uint8_t days_mask = 0;
+      if (strcmp(week_str, "Sunday") == 0) days_mask = (1 << 0);
+      else if (strcmp(week_str, "Monday") == 0) days_mask = (1 << 1);
+      else if (strcmp(week_str, "Tuesday") == 0) days_mask = (1 << 2);
+      else if (strcmp(week_str, "Wednesday") == 0) days_mask = (1 << 3);
+      else if (strcmp(week_str, "Thursday") == 0) days_mask = (1 << 4);
+      else if (strcmp(week_str, "Friday") == 0) days_mask = (1 << 5);
+      else if (strcmp(week_str, "Saturday") == 0) days_mask = (1 << 6);
+
+      // For now, update alarm at index 0
+      Alarm_Update(0, hour, minute, days_mask, enabled);
     }
     else if (command_name && strcmp(command_name, "play_song") == 0)
     {
-        int songIndex = paras["Song_index"];
-        const char* ui_mode = paras["UI"];
+      int songIndex = paras["Song_index"];
+      const char *ui_mode = paras["UI"];
 
-        if (strcmp(ui_mode, "Full") == 0) {
-            requestedSongIndex = songIndex;
-            requestedSongAction = (volatile void (*)(int))&play_song_full_ui;
-        } else if (strcmp(ui_mode, "Lite") == 0) {
-            requestedSongIndex = songIndex;
-            requestedSongAction = (volatile void (*)(int))&play_song_lite_ui;
-        } else if (strcmp(ui_mode, "No") == 0) {
-            play_song_background(songIndex);
-        }
+      if (strcmp(ui_mode, "Full") == 0)
+      {
+        requestedSongIndex = songIndex;
+        requestedSongAction = (volatile void (*)(int)) & play_song_full_ui;
+      }
+      else if (strcmp(ui_mode, "Lite") == 0)
+      {
+        requestedSongIndex = songIndex;
+        requestedSongAction = (volatile void (*)(int)) & play_song_lite_ui;
+      }
+      else if (strcmp(ui_mode, "No") == 0)
+      {
+        play_song_background(songIndex);
+      }
     }
 
     char requestId[100] = { 0 };
