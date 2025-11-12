@@ -18,7 +18,9 @@ page {
 .status-circles-container {
   display: flex;
   justify-content: space-around;
+  flex-wrap: wrap;
   width: 100%;
+  gap: 20rpx;
   margin-bottom: 30rpx;
 }
 .circle-wrap {
@@ -26,8 +28,10 @@ page {
   flex-direction: column;
   align-items: center;
   gap: 15rpx;
+  width: 30%; /* 每行3个 */
+  margin-bottom: 20rpx;
 }
-.circle-progress, .circle-progress-phot {
+.circle-progress, .circle-progress-phot, .circle-progress-cpu, .circle-progress-gpu, .circle-progress-ram, .circle-progress-esp {
   width: 180rpx;
   height: 180rpx;
   border-radius: 50%;
@@ -37,9 +41,12 @@ page {
   background: conic-gradient(deepskyblue calc(var(--progress, 0) * 3.6deg), #282828 0deg);
   transition: --progress 0.4s ease;
 }
-.circle-progress-phot {
-  background: conic-gradient(gold calc(var(--progress, 0) * 3.6deg), #282828 0deg);
-}
+.circle-progress-phot { background: conic-gradient(gold calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-cpu { background: conic-gradient(rgb(0, 255, 0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-gpu { background: conic-gradient(rgb(0,0,255) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-ram { background: conic-gradient(rgb(255,0,0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-esp { background: conic-gradient(rgb(255, 180, 0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+
 .progress-text {
   color: white;
   font-size: 36rpx;
@@ -48,23 +55,6 @@ page {
 .circle-label {
   font-size: 28rpx;
   color: #aaa;
-}
-
-/* LED 显示 */
-.led-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 40rpx;
-}
-.led-display {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: 50%;
-  border: 4rpx solid #333;
-  box-shadow: 0 0 40rpx rgba(0, 0, 0, 0.5);
-  transition: background-color 0.3s ease;
 }
 
 /* 消息提示栏 */
@@ -118,18 +108,7 @@ slider {
   gap: 25rpx;
 }
 
-.btn, .btn-half {
+.btn {
   border-radius: 24rpx !important; /* important to override default styles */
   font-weight: bold;
-}
-
-.button-group {
-  display: flex;
-  flex-direction: row;
-  gap: 25rpx;
-  width: 100%;
-}
-
-.btn-half {
-  flex: 1;
 }
