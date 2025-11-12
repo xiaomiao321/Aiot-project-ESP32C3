@@ -12,5 +12,9 @@
       </view>
     </picker>
   </view>
+  <!-- 消息提示栏 -->
+  <view class="message-panel">
+    <text class="message-text">{{result}}</text>
+  </view>
   <button type="primary" bindtap="sendCommand">下发命令</button>
 </view>

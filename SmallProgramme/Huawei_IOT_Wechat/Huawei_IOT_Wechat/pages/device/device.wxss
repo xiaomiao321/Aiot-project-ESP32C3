@@ -42,10 +42,10 @@ page {
   transition: --progress 0.4s ease;
 }
 .circle-progress-phot { background: conic-gradient(gold calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
-.circle-progress-cpu { background: conic-gradient(#ff6347 calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
-.circle-progress-gpu { background: conic-gradient(#9370db calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
-.circle-progress-ram { background: conic-gradient(#3cb371 calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
-.circle-progress-esp { background: conic-gradient(#f08080 calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-cpu { background: conic-gradient(rgb(0, 255, 0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-gpu { background: conic-gradient(rgb(0,0,255) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-ram { background: conic-gradient(rgb(255,0,0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
+.circle-progress-esp { background: conic-gradient(rgb(255, 180, 0) calc(var(--progress, 0) * 3.6deg), #282828 0deg); }
 
 .progress-text {
   color: white;

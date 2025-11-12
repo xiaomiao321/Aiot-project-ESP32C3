@@ -1,11 +1,10 @@
-// 包含核心库和模块头文件
-#include "animation.h"      // 本模块的头文件
-#include "Alarm.h"          // 闹钟模块，用于访问全局响铃状态
-#include "Menu.h"           // 主菜单模块，用于访问全局TFT对象
-#include "MQTT.h"           // MQTT模块，用于访问全局退出标志
-#include "RotaryEncoder.h"  // 旋转编码器，用于处理用户输入
-#include "Buzzer.h"         // 蜂鸣器模块，用于播放声音
-#include "LED.h"            // LED模块，用于控制NeoPixel灯带
+#include "animation.h"      
+#include "Alarm.h"          
+#include "Menu.h"           
+#include "MQTT.h"           
+#include "RotaryEncoder.h"  
+#include "Buzzer.h"         
+#include "LED.h"            
 
 // --- 模块内部全局变量 ---
 // 用于从外部通知动画任务停止的标志，volatile确保在多任务环境下被正确访问
@@ -28,14 +27,14 @@ void Animation_task(void *pvParameters)
   int delay_ms = 500; // 初始延迟时间，控制动画速度
 
   // 任务主循环，直到 stopAnimationTask 标志被置为 true
-  while(!stopAnimationTask)
+  while (!stopAnimationTask)
   {
     // 1. 绘制动画帧：生成随机参数来绘制一个平滑弧形
     uint16_t fg_color = random(0x10000); // 随机前景色
     uint16_t bg_color = TFT_BLACK;      // 背景色为黑色
     uint16_t x = random(tft.width());   // 随机中心点x坐标
     uint16_t y = random(tft.height());  // 随机中心点y坐标
-    uint8_t radius = random(20, tft.width()/4); // 随机外半径
+    uint8_t radius = random(20, tft.width() / 4); // 随机外半径
     uint8_t thickness = random(1, radius / 4);  // 随机厚度
     uint8_t inner_radius = radius - thickness;    // 计算内半径
     uint16_t start_angle = random(361); // 随机起始角度
@@ -58,7 +57,8 @@ void Animation_task(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(delay_ms)); // 等待一段时间
 
     // 逐渐加快动画速度（减小延迟）
-    if (delay_ms > 50) {
+    if (delay_ms > 50)
+    {
       delay_ms -= 10;
     }
   }
@@ -82,14 +82,15 @@ void Animation_task(void *pvParameters)
 void AnimationMenu()
 {
   tft.fillScreen(TFT_BLACK); // 清空屏幕
-  
+
   // 初始化NeoPixel灯带，确保所有灯都熄灭
   strip.show();
 
   stopAnimationTask = false; // 重置任务停止标志
-  
+
   // 确保没有旧的动画任务在运行，如果有则删除
-  if(animationTaskHandle != NULL) {
+  if (animationTaskHandle != NULL)
+  {
     vTaskDelete(animationTaskHandle);
     animationTaskHandle = NULL;
   }
@@ -100,35 +101,40 @@ void AnimationMenu()
   initRotaryEncoder(); // 初始化旋转编码器以接收用户输入
 
   // 循环等待退出信号
-  while(true)
+  while (true)
   {
     // 检查全局子菜单退出标志
-    if (exitSubMenu) {
-        exitSubMenu = false; // 重置标志
-        if (animationTaskHandle != NULL) {
-            stopAnimationTask = true; // 通知动画任务停止
-        }
-        vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
-        break; // 退出循环
+    if (exitSubMenu)
+    {
+      exitSubMenu = false; // 重置标志
+      if (animationTaskHandle != NULL)
+      {
+        stopAnimationTask = true; // 通知动画任务停止
+      }
+      vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
+      break; // 退出循环
     }
     // 检查全局闹钟响铃标志
-    if (g_alarm_is_ringing) {
-        if (animationTaskHandle != NULL) {
-            stopAnimationTask = true; // 通知动画任务停止
-        }
-        vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
-        break; // 退出循环
+    if (g_alarm_is_ringing)
+    {
+      if (animationTaskHandle != NULL)
+      {
+        stopAnimationTask = true; // 通知动画任务停止
+      }
+      vTaskDelay(pdMS_TO_TICKS(200)); // 等待任务处理停止信号
+      break; // 退出循环
     }
     // 检查按钮短按事件
-    if(readButton())
+    if (readButton())
     {
       // 通知动画任务停止
-      if (animationTaskHandle != NULL) {
+      if (animationTaskHandle != NULL)
+      {
         stopAnimationTask = true;
       }
 
       // 等待任务自行删除
-      vTaskDelay(pdMS_TO_TICKS(200)); 
+      vTaskDelay(pdMS_TO_TICKS(200));
 
       break; // 退出循环
     }

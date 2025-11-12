@@ -6,16 +6,16 @@
 
   <view class="led-grid-container">
     <!-- Manually placing LEDs according to the grid-template-areas -->
-    <view class="led-item led-pos-0 {{leds[0].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="0">0</view>
-    <view class="led-item led-pos-1 {{leds[1].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="1">1</view>
-    <view class="led-item led-pos-2 {{leds[2].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="2">2</view>
-    <view class="led-item led-pos-3 {{leds[3].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="3">3</view>
-    <view class="led-item led-pos-4 {{leds[4].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="4">4</view>
-    <view class="led-item led-pos-5 {{leds[5].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="5">5</view>
-    <view class="led-item led-pos-6 {{leds[6].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="6">6</view>
-    <view class="led-item led-pos-7 {{leds[7].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="7">7</view>
-    <view class="led-item led-pos-8 {{leds[8].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="8">8</view>
-    <view class="led-item led-pos-9 {{leds[9].state === 'on' ? 'led-on' : ''}}" bindtap="toggleLed" data-index="9">9</view>
+    <view class="led-item led-pos-0 {{leds[0].state === 'on' ? 'led-on' : ''}}" style="{{leds[0].style}}" bindtap="toggleLed" data-index="0">0</view>
+    <view class="led-item led-pos-1 {{leds[1].state === 'on' ? 'led-on' : ''}}" style="{{leds[1].style}}" bindtap="toggleLed" data-index="1">1</view>
+    <view class="led-item led-pos-2 {{leds[2].state === 'on' ? 'led-on' : ''}}" style="{{leds[2].style}}" bindtap="toggleLed" data-index="2">2</view>
+    <view class="led-item led-pos-3 {{leds[3].state === 'on' ? 'led-on' : ''}}" style="{{leds[3].style}}" bindtap="toggleLed" data-index="3">3</view>
+    <view class="led-item led-pos-4 {{leds[4].state === 'on' ? 'led-on' : ''}}" style="{{leds[4].style}}" bindtap="toggleLed" data-index="4">4</view>
+    <view class="led-item led-pos-5 {{leds[5].state === 'on' ? 'led-on' : ''}}" style="{{leds[5].style}}" bindtap="toggleLed" data-index="5">5</view>
+    <view class="led-item led-pos-6 {{leds[6].state === 'on' ? 'led-on' : ''}}" style="{{leds[6].style}}" bindtap="toggleLed" data-index="6">6</view>
+    <view class="led-item led-pos-7 {{leds[7].state === 'on' ? 'led-on' : ''}}" style="{{leds[7].style}}" bindtap="toggleLed" data-index="7">7</view>
+    <view class="led-item led-pos-8 {{leds[8].state === 'on' ? 'led-on' : ''}}" style="{{leds[8].style}}" bindtap="toggleLed" data-index="8">8</view>
+    <view class="led-item led-pos-9 {{leds[9].state === 'on' ? 'led-on' : ''}}" style="{{leds[9].style}}" bindtap="toggleLed" data-index="9">9</view>
   </view>
 
   <!-- RGB控制 -->

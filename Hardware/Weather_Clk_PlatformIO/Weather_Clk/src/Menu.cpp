@@ -44,13 +44,13 @@ uint8_t picture_flag = 0;           // 当前选中的菜单项索引
 // const MenuItem menuItems[] = {
 //     {"Clock", Weather, &weatherMenu},
 //     {"Countdown", Countdown, &CountdownMenu},
-//     {"Alarm", alarm_img, &AlarmMenu}, // Added Alarm Menu
+//     {"Alarm", alarm_img, &AlarmMenu}, 
 //     {"Pomodoro", tomato, &PomodoroMenu},
 //     {"Stopwatch", Timer, &StopwatchMenu},
 //     {"Music", Music, &BuzzerMenu},
 //     {"Music Lite", music_lite, &MusicMenuLite},
-//     {"Space",Space_img,&SpaceMenuScreen}, // Placeholder icon
-//     {"Internet", Internet, &InternetMenuScreen}, // New Internet menu
+//     {"Space",Space_img,&SpaceMenuScreen}, 
+//     {"Internet", Internet, &InternetMenuScreen}, 
 //     {"Performance", Performance, &performanceMenu},
 //     {"Temperature",Temperature, &DS18B20Menu},
 //     {"Animation",Animation, &AnimationMenu},
@@ -65,8 +65,8 @@ const MenuItem menuItems[] = {
     {"Space", Space_img, &SpaceMenuScreen},
     {"Alarm", alarm_img, &AlarmMenu},
     {"Countdown", Timer, &CountdownMenu},
-    {"Pomodoro", tomato, &PomodoroMenu},
-    {"Stopwatch", alarm_img, &StopwatchMenu},
+    {"Pomodoro", Timer, &PomodoroMenu},
+    {"Stopwatch", Timer, &StopwatchMenu},
     {"Music Lite", Music, &MusicMenuLite},
     {"Performance", Performance, &performanceMenu},
     {"Temperature", Temperature, &DS18B20Menu},

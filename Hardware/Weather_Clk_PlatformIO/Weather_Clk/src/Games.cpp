@@ -1,4 +1,3 @@
-// 包含所有必需的头文件
 #include "RotaryEncoder.h"
 #include <Preferences.h>
 #include <TFT_eSPI.h>
@@ -12,37 +11,6 @@
 #include "animation.h"
 #include "Games.h"
 #include "MQTT.h"
-#include <vector> // 用于 std::vector
-
-// --- 贪吃蛇游戏常量 ---
-#define SNAKE_GRID_WIDTH  20 // 游戏区域网格宽度
-#define SNAKE_GRID_HEIGHT 20 // 游戏区域网格高度
-#define SNAKE_CELL_SIZE   10 // 每个单元格的像素大小
-#define SNAKE_START_X     (SCREEN_WIDTH / 2 - (SNAKE_GRID_WIDTH * SNAKE_CELL_SIZE) / 2) // 游戏区域起始X坐标
-#define SNAKE_START_Y     (SCREEN_HEIGHT / 2 - (SNAKE_GRID_HEIGHT * SNAKE_CELL_SIZE) / 2) // 游戏区域起始Y坐标
-#define SNAKE_INITIAL_LENGTH 3 // 蛇的初始长度
-#define SNAKE_GAME_SPEED_MS 200 // 游戏速度（每帧的毫秒数）
-
-// 蛇的移动方向枚举
-enum SnakeDirection {
-  SNAKE_UP,
-  SNAKE_DOWN,
-  SNAKE_LEFT,
-  SNAKE_RIGHT
-};
-
-// 点结构体，用于表示坐标
-struct Point {
-  int x;
-  int y;
-};
-
-// 游戏状态变量
-std::vector<Point> snakeBody; // 存储蛇身体的容器
-Point food;                   // 食物坐标
-SnakeDirection currentDirection; // 当前移动方向
-bool gameOver;                // 游戏结束标志
-int snakeScore;               // 分数
 
 // --- 布局配置 ---
 static const int ICON_SIZE = 200;      // 游戏图标大小
@@ -66,26 +34,29 @@ void ConwayGame();
 void BuzzerTapGame();
 void TimeChallengeGame();
 void drawGameIcons(int16_t offset);
-void flappy_bird_game(); // 声明小鸟游戏函数
+void flappy_bird_game();
 
 /**
  * @brief 检测双击事件
  * @param reset 如果为true，则重置双击检测状态
  * @return 如果检测到双击，返回true
  */
-bool gamesDetectDoubleClick(bool reset = false) {
-  static unsigned long lastClickTime = 0;
-  if (reset) {
-      lastClickTime = 0;
-      return false;
-  }
-  unsigned long currentTime = millis();
-  if (currentTime - lastClickTime < 500) { // 500ms内两次点击视为双击
-    lastClickTime = 0;
-    return true;
-  }
-  lastClickTime = currentTime;
-  return false;
+bool gamesDetectDoubleClick(bool reset = false)
+{
+    static unsigned long lastClickTime = 0;
+    if (reset)
+    {
+        lastClickTime = 0;
+        return false;
+    }
+    unsigned long currentTime = millis();
+    if (currentTime - lastClickTime < 500)
+    { // 500ms内两次点击视为双击
+        lastClickTime = 0;
+        return true;
+    }
+    lastClickTime = currentTime;
+    return false;
 }
 
 // --- 按钮防抖变量 ---
@@ -94,25 +65,9 @@ static int lastDebouncedButtonState = HIGH; // HIGH = 未按下, LOW = 按下
 const int BUTTON_DEBOUNCE_DELAY = 50; // 防抖延迟 (ms)
 #define ENCODER_SW 25 // 编码器按钮引脚
 
-/**
- * @brief 获取经过防抖处理的按钮状态
- * @return 如果按钮被按下，返回true
- */
-bool getDebouncedButtonState() {
-    int reading = digitalRead(ENCODER_SW);
-    if (reading != lastDebouncedButtonState) {
-        lastButtonDebounceTime = millis();
-    }
-    if ((millis() - lastButtonDebounceTime) > BUTTON_DEBOUNCE_DELAY) {
-        if (reading != lastDebouncedButtonState) {
-            lastDebouncedButtonState = reading;
-        }
-    }
-    return (lastDebouncedButtonState == LOW);
-}
-
 // --- 游戏菜单定义 ---
-struct GameItem {
+struct GameItem
+{
     const char *name;         // 游戏名称
     const uint16_t *image;    // 游戏图标图像数据指针
     void (*function)();       // 指向游戏主函数的函数指针
@@ -120,18 +75,26 @@ struct GameItem {
 
 // 游戏列表
 const GameItem gameItems[] = {
-    {"Conway's Game", bird_big, ConwayGame},
+    {"Conway's Game", Games, ConwayGame},
     {"Flappy Bird", bird_big, flappy_bird_game},
-    {"Buzzer Tap", bird_big, BuzzerTapGame},
+    {"Buzzer Tap", Timer, BuzzerTapGame},
     {"Time Challenge", Timer, TimeChallengeGame},
 };
 const uint8_t GAME_ITEM_COUNT = sizeof(gameItems) / sizeof(gameItems[0]);
 
+enum GameState
+{
+    STATE_INITIAL,      // 初始绿色屏幕，等待变红
+    STATE_TIMING,       // 红色屏幕，正在计时
+    STATE_RESULT,       // 显示结果
+    STATE_TOO_SOON      // 按下过早
+};
 /**
  * @brief 绘制游戏选择菜单的图标界面
  * @param offset 当前图标滚动的X轴偏移量
  */
-void drawGameIcons(int16_t offset) {
+void drawGameIcons(int16_t offset)
+{
     menuSprite.fillSprite(TFT_BLACK);
 
     // 绘制底部倒置的白色选择三角形指示器
@@ -139,9 +102,11 @@ void drawGameIcons(int16_t offset) {
     menuSprite.fillTriangle(triangle_x, SCREEN_HEIGHT - 25, triangle_x - 12, SCREEN_HEIGHT - 5, triangle_x + 12, SCREEN_HEIGHT - 5, TFT_WHITE);
 
     // 绘制可见范围内的游戏图标
-    for (int i = 0; i < GAME_ITEM_COUNT; i++) {
+    for (int i = 0; i < GAME_ITEM_COUNT; i++)
+    {
         int16_t x = offset + (i * ICON_SPACING);
-        if (x >= -ICON_SIZE && x < SCREEN_WIDTH) {
+        if (x >= -ICON_SIZE && x < SCREEN_WIDTH)
+        {
             menuSprite.pushImage(x, ICON_Y_POS, ICON_SIZE, ICON_SIZE, gameItems[i].image);
         }
     }
@@ -159,7 +124,8 @@ void drawGameIcons(int16_t offset) {
 /**
  * @brief 游戏选择的主菜单函数
  */
-void GamesMenu() {
+void GamesMenu()
+{
     tft.fillScreen(TFT_BLACK);
 
     // 重置菜单状态
@@ -173,25 +139,31 @@ void GamesMenu() {
     static unsigned long gamesMenuLastClickTime = 0;
     static bool gamesMenuSingleClickPending = false;
 
-    while (true) {
+    while (true)
+    {
         // 检查全局退出条件
         if (exitSubMenu || g_alarm_is_ringing) { return; }
         if (readButtonLongPress()) { return; } // 长按退出
 
         int direction = readEncoder();
-        if (direction != 0) { // 旋转编码器切换游戏
-            if (direction == 1) {
+        if (direction != 0)
+        { // 旋转编码器切换游戏
+            if (direction == 1)
+            {
                 game_picture_flag = (game_picture_flag + 1) % GAME_ITEM_COUNT;
-            } else if (direction == -1) {
+            }
+            else if (direction == -1)
+            {
                 game_picture_flag = (game_picture_flag == 0) ? GAME_ITEM_COUNT - 1 : game_picture_flag - 1;
             }
             tone(BUZZER_PIN, 1000 * (game_picture_flag + 1), 20); // 播放提示音
-            
+
             // --- 带缓动效果的滚动动画 ---
             int16_t target_display = INITIAL_X_OFFSET - (game_picture_flag * ICON_SPACING);
             int16_t start_display = game_display;
-            for (uint8_t i = 0; i <= ANIMATION_STEPS; i++) {
-                float t = (float)i / ANIMATION_STEPS;
+            for (uint8_t i = 0; i <= ANIMATION_STEPS; i++)
+            {
+                float t = (float) i / ANIMATION_STEPS;
                 float eased_t = 0.5 * (1 - cos(t * PI)); // 使用余弦缓动
                 game_display = start_display + (target_display - start_display) * eased_t;
                 drawGameIcons(game_display);
@@ -201,22 +173,28 @@ void GamesMenu() {
             drawGameIcons(game_display);
         }
 
-        if (readButton()) { // 检测到按钮点击
-            if (gamesDetectDoubleClick()) { // 如果是双击
+        if (readButton())
+        { // 检测到按钮点击
+            if (gamesDetectDoubleClick())
+            { // 如果是双击
                 gamesMenuSingleClickPending = false; // 取消待处理的单击
                 return; // 退出游戏菜单
-            } else { // 否则是单击
+            }
+            else
+            { // 否则是单击
                 gamesMenuLastClickTime = millis();
                 gamesMenuSingleClickPending = true; // 标记为有待处理的单击
             }
         }
 
         // 检查待处理的单击事件是否应该被执行 (即等待双击窗口超时后)
-        if (gamesMenuSingleClickPending && (millis() - gamesMenuLastClickTime > 500)) {
+        if (gamesMenuSingleClickPending && (millis() - gamesMenuLastClickTime > 500))
+        {
             gamesMenuSingleClickPending = false; // 消费掉这个单击事件
             tone(BUZZER_PIN, 2000, 50);
             vTaskDelay(pdMS_TO_TICKS(50));
-            if (gameItems[game_picture_flag].function) {
+            if (gameItems[game_picture_flag].function)
+            {
                 gameItems[game_picture_flag].function(); // 执行对应的游戏函数
             }
             // 游戏结束后，重绘菜单
@@ -236,9 +214,12 @@ bool nextGrid[GRID_SIZE][GRID_SIZE];
 /**
  * @brief 初始化康威生命游戏的网格
  */
-void initConwayGrid() {
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
+void initConwayGrid()
+{
+    for (int i = 0; i < GRID_SIZE; i++)
+    {
+        for (int j = 0; j < GRID_SIZE; j++)
+        {
             grid[i][j] = (random(100) < 20); // 20%的概率为活细胞
         }
     }
@@ -247,12 +228,18 @@ void initConwayGrid() {
 /**
  * @brief 绘制康威生命游戏的网格
  */
-void drawConwayGrid() {
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            if (grid[i][j]) {
+void drawConwayGrid()
+{
+    for (int i = 0; i < GRID_SIZE; i++)
+    {
+        for (int j = 0; j < GRID_SIZE; j++)
+        {
+            if (grid[i][j])
+            {
                 tft.fillRect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, TFT_GREEN);
-            } else {
+            }
+            else
+            {
                 tft.fillRect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, TFT_BLACK);
             }
         }
@@ -262,33 +249,48 @@ void drawConwayGrid() {
 /**
  * @brief 更新康威生命游戏的网格到下一代
  */
-void updateConwayGrid() {
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
+void updateConwayGrid()
+{
+    for (int i = 0; i < GRID_SIZE; i++)
+    {
+        for (int j = 0; j < GRID_SIZE; j++)
+        {
             int liveNeighbors = 0;
             // 检查8个邻居
-            for (int x = -1; x <= 1; x++) {
-                for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
                     if (x == 0 && y == 0) continue; // 跳过自身
                     int ni = (i + x + GRID_SIZE) % GRID_SIZE; // 环形边界
                     int nj = (j + y + GRID_SIZE) % GRID_SIZE; // 环形边界
-                    if (grid[ni][nj]) {
+                    if (grid[ni][nj])
+                    {
                         liveNeighbors++;
                     }
                 }
             }
 
             // 应用生命游戏规则
-            if (grid[i][j]) { // 活细胞
-                if (liveNeighbors < 2 || liveNeighbors > 3) {
+            if (grid[i][j])
+            { // 活细胞
+                if (liveNeighbors < 2 || liveNeighbors > 3)
+                {
                     nextGrid[i][j] = false; // 因孤单或拥挤而死
-                } else {
+                }
+                else
+                {
                     nextGrid[i][j] = true; // 继续存活
                 }
-            } else { // 死细胞
-                if (liveNeighbors == 3) {
+            }
+            else
+            { // 死细胞
+                if (liveNeighbors == 3)
+                {
                     nextGrid[i][j] = true; // 复活
-                } else {
+                }
+                else
+                {
                     nextGrid[i][j] = false; // 保持死亡
                 }
             }
@@ -301,7 +303,8 @@ void updateConwayGrid() {
 /**
  * @brief 康威生命游戏主函数
  */
-void ConwayGame() {
+void ConwayGame()
+{
     tft.fillScreen(TFT_BLACK);
     initConwayGrid();
     drawConwayGrid();
@@ -313,19 +316,23 @@ void ConwayGame() {
     unsigned long lastUpdateTime = millis();
     const unsigned long UPDATE_INTERVAL = 200; // 每200ms更新一代
 
-    while (true) {
+    while (true)
+    {
         if (exitSubMenu || g_alarm_is_ringing) { return; }
 
         // 自动演化
-        if (millis() - lastUpdateTime > UPDATE_INTERVAL) {
+        if (millis() - lastUpdateTime > UPDATE_INTERVAL)
+        {
             updateConwayGrid();
             drawConwayGrid();
             lastUpdateTime = millis();
         }
 
         // 按钮处理，双击退出
-        if (readButton()) {
-            if (gamesDetectDoubleClick()) {
+        if (readButton())
+        {
+            if (gamesDetectDoubleClick())
+            {
                 return;
             }
         }
@@ -333,57 +340,110 @@ void ConwayGame() {
     }
 }
 
-// --- 蜂鸣器敲击游戏实现 ---
-static int buzzerTapScore = 0;
-const int TAP_WINDOW_MS = 300; // 声音响起后可以敲击的有效时间窗口
-const int TONE_FREQ = 1000;
-const int TONE_DURATION = 100;
+// 辅助函数：设置反应力测试游戏的初始状态
+void setupBuzzerTapInitialState(TFT_eSPI &tft_obj, GameState &state_ref, unsigned long &waitStartTime_ref, long &randomDelay_ref)
+{
+    tft_obj.fillScreen(TFT_GREEN);
+    tft_obj.setTextColor(TFT_WHITE, TFT_GREEN);
+    tft_obj.setTextDatum(MC_DATUM);
+    tft_obj.setTextFont(4);
+    tft_obj.setTextSize(1);
+    tft_obj.drawString("Wait for Red", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    tft_obj.setTextFont(1);
+    tft_obj.setTextSize(1);
+    tft_obj.setTextDatum(BC_DATUM); // Bottom Center
+    tft_obj.drawString("Double-click to exit", SCREEN_WIDTH / 2, SCREEN_HEIGHT - 10);
+    waitStartTime_ref = millis();
+    randomDelay_ref = random(2000, 4001);
+    state_ref = STATE_INITIAL;
+    gamesDetectDoubleClick(true); // 重置双击检测
+}
 
 /**
- * @brief 蜂鸣器敲击反应游戏
+ * @brief 反应力测试游戏
+ * @details 模仿 humanbenchmark.com/tests/reactiontime。
+ *          屏幕开始为绿色，随机2-4秒后变为红色，此时计时开始。
+ *          玩家需尽快按下按钮，屏幕会显示反应时间。
+ *          再次按下可重新开始。双击可退出。
  */
-void BuzzerTapGame() {
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setTextFont(1);
-    tft.setTextSize(2);
-    tft.setCursor(20, 50);
-    tft.print("Score: 0");
-    tft.setTextSize(1);
-    tft.setCursor(35, 140);
-    tft.print("Tap after tone, Double-click to exit");
+void BuzzerTapGame()
+{
+    GameState state = STATE_INITIAL;
+    unsigned long waitStartTime = 0;
+    unsigned long reactionStartTime = 0;
+    long randomDelay = 0;
 
-    buzzerTapScore = 0;
-    unsigned long lastToneTime = 0;
-    unsigned long nextToneInterval = random(1000, 3000); // 1-3秒随机间隔
+    setupBuzzerTapInitialState(tft, state, waitStartTime, randomDelay);
 
-    while (true) {
-        if (exitSubMenu || g_alarm_is_ringing) { noTone(BUZZER_PIN); return; }
-        
+    while (true)
+    {
+        if (exitSubMenu || g_alarm_is_ringing) { return; }
+
         unsigned long currentTime = millis();
 
-        // 到达时间间隔，播放声音
-        if (currentTime - lastToneTime > nextToneInterval) {
-            tone(BUZZER_PIN, TONE_FREQ, TONE_DURATION);
-            lastToneTime = currentTime;
-            nextToneInterval = random(1000, 3000);
-        }
-
-        // 按钮处理
-        if (readButton()) {
-            if (gamesDetectDoubleClick()) { noTone(BUZZER_PIN); return; } // 双击退出
-
-            // 检查是否在有效窗口内敲击
-            if (currentTime - lastToneTime > 0 && currentTime - lastToneTime < TAP_WINDOW_MS) {
-                buzzerTapScore++;
-                tft.fillRect(100, 50, 100, 20, TFT_BLACK); // 清除旧分数
-                tft.setCursor(100, 50);
-                tft.print(buzzerTapScore);
-                tone(BUZZER_PIN, TONE_FREQ * 2, 50); // 成功提示音
-            } else {
-                tone(BUZZER_PIN, TONE_FREQ / 2, 50); // 失败提示音
+        // 状态机主体
+        if (state == STATE_INITIAL)
+        {
+            // 检查是否到达变红时间
+            if (currentTime - waitStartTime >= randomDelay)
+            {
+                tft.fillScreen(TFT_RED);
+                reactionStartTime = millis();
+                state = STATE_TIMING;
             }
         }
+
+        // 统一处理按钮输入
+        if (readButton())
+        {
+            if (gamesDetectDoubleClick())
+            {
+                return; // 双击退出
+            }
+
+            // 单击逻辑
+            switch (state)
+            {
+            case STATE_INITIAL: // 在变红前点击
+                tft.fillScreen(TFT_BLUE);
+                tft.setTextColor(TFT_WHITE, TFT_BLUE);
+                tft.setTextDatum(MC_DATUM);
+                tft.setTextFont(4);
+                tft.setTextSize(1);
+                tft.drawString("Too Soon!", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 20);
+                tft.drawString("Click to restart", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+                state = STATE_TOO_SOON;
+                break;
+
+            case STATE_TIMING: // 成功点击
+            {
+                unsigned long reactionTime = millis() - reactionStartTime;
+                tft.fillScreen(TFT_BLACK);
+                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextDatum(MC_DATUM);
+
+                // 用数码管字体显示时长
+                tft.setTextFont(7);
+                tft.setTextSize(1);
+                char timeStr[20];
+                sprintf(timeStr, "%lu", reactionTime);
+                tft.drawString(timeStr, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 10);
+
+                // 显示提示文字
+                tft.setTextFont(4);
+                tft.setTextSize(1);
+                tft.drawString("Click to restart", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 40);
+                state = STATE_RESULT;
+            }
+            break;
+
+            case STATE_RESULT:
+            case STATE_TOO_SOON: // 在结果界面点击，重新开始
+                setupBuzzerTapInitialState(tft, state, waitStartTime, randomDelay);
+                break;
+            }
+        }
+
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
@@ -399,7 +459,8 @@ static const uint16_t PROGRESS_BAR_BG_COLOR = TFT_DARKGREY;
 /**
  * @brief 时间挑战游戏
  */
-void TimeChallengeGame() {
+void TimeChallengeGame()
+{
     menuSprite.fillSprite(TFT_BLACK);
     menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
     menuSprite.setTextSize(2);
@@ -423,12 +484,14 @@ void TimeChallengeGame() {
     unsigned long pressTime = 0;
     bool gameEnded = false;
 
-    while (true) {
+    while (true)
+    {
         if (exitSubMenu || g_alarm_is_ringing) { return; }
-        
+
         unsigned long currentTime = millis();
 
-        if (!gameEnded) { // 如果游戏未结束
+        if (!gameEnded)
+        { // 如果游戏未结束
             float elapsedSec = (currentTime - startTime) / 1000.0;
             menuSprite.fillRect(100, 80, 120, 20, TFT_BLACK);
             menuSprite.setTextSize(3);
@@ -437,28 +500,31 @@ void TimeChallengeGame() {
             menuSprite.setTextSize(2);
 
             // 更新进度条
-            float progressRatio = (float)(currentTime - startTime) / targetTimeMs;
-            int filledWidth = (int)(progressRatio * (PROGRESS_BAR_WIDTH - 2));
+            float progressRatio = (float) (currentTime - startTime) / targetTimeMs;
+            int filledWidth = (int) (progressRatio * (PROGRESS_BAR_WIDTH - 2));
             if (filledWidth > PROGRESS_BAR_WIDTH - 2) filledWidth = PROGRESS_BAR_WIDTH - 2;
             menuSprite.fillRect(PROGRESS_BAR_X + 1, PROGRESS_BAR_Y + 1, filledWidth, PROGRESS_BAR_HEIGHT - 2, PROGRESS_BAR_COLOR);
 
             // 每秒蜂鸣一次
-            if (currentTime - lastBuzzerTime >= BUZZER_INTERVAL_MS) {
+            if (currentTime - lastBuzzerTime >= BUZZER_INTERVAL_MS)
+            {
                 tone(BUZZER_PIN, 1000, 50);
                 lastBuzzerTime = currentTime;
             }
         }
         menuSprite.pushSprite(0, 0); // 推送到屏幕
 
-        if (readButton()) {
+        if (readButton())
+        {
             if (gamesDetectDoubleClick()) { return; } // 双击退出
-            if (!gameEnded) { // 首次单击结束游戏
+            if (!gameEnded)
+            { // 首次单击结束游戏
                 pressTime = currentTime;
                 gameEnded = true;
                 tone(BUZZER_PIN, 1500, 100); // 确认音
-                
+
                 // 计算并显示时间差
-                float diffSec = (float)((long)(pressTime - startTime) - (long)targetTimeMs) / 1000.0;
+                float diffSec = (float) ((long) (pressTime - startTime) - (long) targetTimeMs) / 1000.0;
                 menuSprite.setTextSize(2);
                 menuSprite.setCursor(20, 130);
                 menuSprite.printf("Diff: %.2f s", diffSec);
@@ -482,7 +548,8 @@ void TimeChallengeGame() {
 /**
  * @brief Flappy Bird 游戏主函数
  */
-void flappy_bird_game() {
+void flappy_bird_game()
+{
     float bird_y = SCREEN_HEIGHT / 2;
     float bird_vy = 0;
     int pipes_x[2], pipes_y[2];
@@ -499,28 +566,35 @@ void flappy_bird_game() {
     unsigned long lastFrameTime = millis();
     unsigned long lastClickTime = 0;
 
-    while (true) {
+    while (true)
+    {
         if (exitSubMenu || g_alarm_is_ringing) { return; }
         if (readButtonLongPress()) { return; }
-        if (readButton()) {
+        if (readButton())
+        {
             if (gamesDetectDoubleClick()) { return; }
             lastClickTime = millis();
         }
 
         // 游戏逻辑
-        if (!start_game) { // 等待开始
-            if (millis() - lastClickTime < 500 && lastClickTime != 0) {
+        if (!start_game)
+        { // 等待开始
+            if (millis() - lastClickTime < 500 && lastClickTime != 0)
+            {
                 start_game = true;
                 lastClickTime = 0;
             }
-        } else if (!game_over) { // 游戏进行中
-            // 帧率控制
+        }
+        else if (!game_over)
+        { // 游戏进行中
+// 帧率控制
             unsigned long currentTime = millis();
             if (currentTime - lastFrameTime < 30) { vTaskDelay(pdMS_TO_TICKS(1)); continue; }
             lastFrameTime = currentTime;
 
             // 输入，让小鸟跳跃
-            if (millis() - lastClickTime < 500 && lastClickTime != 0) {
+            if (millis() - lastClickTime < 500 && lastClickTime != 0)
+            {
                 bird_vy = JUMP_FORCE;
                 tone(BUZZER_PIN, 1500, 20);
                 lastClickTime = 0;
@@ -531,15 +605,18 @@ void flappy_bird_game() {
             bird_y += bird_vy;
 
             // 管道逻辑
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 2; i++)
+            {
                 pipes_x[i] -= PIPE_SPEED;
                 // 管道移出屏幕后重置
-                if (pipes_x[i] < -PIPE_WIDTH) {
+                if (pipes_x[i] < -PIPE_WIDTH)
+                {
                     pipes_x[i] = SCREEN_WIDTH;
                     pipes_y[i] = random(40, SCREEN_HEIGHT - 40 - PIPE_GAP);
                 }
                 // 通过管道得分
-                if (pipes_x[i] + PIPE_WIDTH < BIRD_X && pipes_x[i] + PIPE_WIDTH + PIPE_SPEED >= BIRD_X) {
+                if (pipes_x[i] + PIPE_WIDTH < BIRD_X && pipes_x[i] + PIPE_WIDTH + PIPE_SPEED >= BIRD_X)
+                {
                     score++;
                     tone(BUZZER_PIN, 2500, 20);
                 }
@@ -547,17 +624,23 @@ void flappy_bird_game() {
 
             // 碰撞检测
             if (bird_y + BIRD_RADIUS > SCREEN_HEIGHT || bird_y - BIRD_RADIUS < 0) game_over = true; // 撞到上下边界
-            for (int i = 0; i < 2; i++) {
-                if (BIRD_X + BIRD_RADIUS > pipes_x[i] && BIRD_X - BIRD_RADIUS < pipes_x[i] + PIPE_WIDTH) {
-                    if (bird_y - BIRD_RADIUS < pipes_y[i] || bird_y + BIRD_RADIUS > pipes_y[i] + PIPE_GAP) {
+            for (int i = 0; i < 2; i++)
+            {
+                if (BIRD_X + BIRD_RADIUS > pipes_x[i] && BIRD_X - BIRD_RADIUS < pipes_x[i] + PIPE_WIDTH)
+                {
+                    if (bird_y - BIRD_RADIUS < pipes_y[i] || bird_y + BIRD_RADIUS > pipes_y[i] + PIPE_GAP)
+                    {
                         game_over = true; // 撞到管道
                     }
                 }
             }
             if (game_over) tone(BUZZER_PIN, 500, 200);
 
-        } else { // 游戏结束
-            if (millis() - lastClickTime < 500 && lastClickTime != 0) {
+        }
+        else
+        { // 游戏结束
+            if (millis() - lastClickTime < 500 && lastClickTime != 0)
+            {
                 // 单击以重置游戏
                 bird_y = SCREEN_HEIGHT / 2; bird_vy = 0; score = 0;
                 pipes_x[0] = SCREEN_WIDTH; pipes_y[0] = random(40, SCREEN_HEIGHT - 40 - PIPE_GAP);
@@ -569,15 +652,19 @@ void flappy_bird_game() {
         // --- 绘图 ---
         menuSprite.fillSprite(TFT_BLACK);
 
-        if (!start_game) {
+        if (!start_game)
+        {
             menuSprite.setTextSize(2);
             menuSprite.setCursor(50, SCREEN_HEIGHT / 2 + 10);
             menuSprite.print("Click to start");
-        } else {
+        }
+        else
+        {
             // 画小鸟
-            menuSprite.pushImage(BIRD_X - 5, (int)bird_y - 4, 11, 8, bird);
+            menuSprite.pushImage(BIRD_X - 5, (int) bird_y - 4, 11, 8, bird);
             // 画管道
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 2; i++)
+            {
                 menuSprite.fillRect(pipes_x[i], 0, PIPE_WIDTH, pipes_y[i], TFT_GREEN);
                 menuSprite.fillRect(pipes_x[i] - 2, pipes_y[i] - 10, PIPE_WIDTH + 4, 10, TFT_GREEN);
                 menuSprite.fillRect(pipes_x[i], pipes_y[i] + PIPE_GAP, PIPE_WIDTH, SCREEN_HEIGHT - (pipes_y[i] + PIPE_GAP), TFT_GREEN);
@@ -588,7 +675,8 @@ void flappy_bird_game() {
             menuSprite.setCursor(10, 10);
             menuSprite.printf("Score: %d", score);
 
-            if (game_over) {
+            if (game_over)
+            {
                 menuSprite.setTextSize(3); menuSprite.setCursor(40, SCREEN_HEIGHT / 2 - 30); menuSprite.print("Game Over");
                 menuSprite.setTextSize(2); menuSprite.setCursor(50, SCREEN_HEIGHT / 2 + 10); menuSprite.print("Click to restart");
             }

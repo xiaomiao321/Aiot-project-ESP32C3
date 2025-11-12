@@ -135,8 +135,6 @@ Page({
     var token = wx.getStorageSync('token');
 
     if (!token) {
-      // In a real app, you might want to navigate to the device page to get a token
-      // For now, just show a toast.
       wx.showToast({ title: 'Token不存在', icon: 'none' });
       that.setData({result: 'Token不存在，请先在设备页获取'});
       return;
@@ -145,7 +143,7 @@ Page({
     wx.request({
         url: `https://${iotdahttps}/v5/iot/${projectId}/devices/${deviceId}/commands`,
         data: commandData,
-        method: 'POST', // OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT
+        method: 'POST', 
         header: {'content-type': 'application/json', 'X-Auth-Token': token }, //请求的header 
         success: function(res){// success
             if (res.statusCode && (res.statusCode === 200 || res.statusCode === 201)) {

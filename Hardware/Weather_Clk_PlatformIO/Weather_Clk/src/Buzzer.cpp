@@ -22,6 +22,7 @@ PlayMode currentPlayMode = LIST_LOOP; // 当前播放模式，默认为列表循
 volatile bool stopBuzzerTask = false; // 停止蜂鸣器任务的标志，volatile确保多任务环境下的可见性
 volatile bool isPaused = false;       // 暂停状态的标志
 volatile bool stopLedTask = false;    // 停止LED任务的标志
+extern volatile bool g_force_exit_ui; // 引用在main.cpp中定义的全局UI退出标志
 
 // --- 用于UI更新的共享状态 ---
 static volatile int shared_song_index = 0;           // 当前播放歌曲在列表中的索引
@@ -501,81 +502,88 @@ void BuzzerMenu()
       vTaskDelay(pdMS_TO_TICKS(20));
     }
 
-    // The playback logic is now in play_song_full_ui, so this part is no longer needed here.
-    // If play_song_full_ui returns, it means the user long-pressed to exit, so we just loop back to the list menu.
   }
 }
 
-void play_song_background(int songIndex) {
-    static int currentSongIndex = -1; // 使用静态变量来存储歌曲索引
-    if (songIndex < 0 || songIndex >= numSongs) return;
+void play_song_background(int songIndex)
+{
+  static int currentSongIndex = -1; // 使用静态变量来存储歌曲索引
+  if (songIndex < 0 || songIndex >= numSongs) return;
 
-    // 如果有后台音乐正在播放，先停止它
-    if (backgroundMusicTaskHandle != NULL) {
-        vTaskDelete(backgroundMusicTaskHandle);
-        backgroundMusicTaskHandle = NULL;
-    }
-    
-    currentSongIndex = songIndex;
-    // 创建一个新的后台播放任务
-    xTaskCreate(Buzzer_PlayMusic_Task, "BackgroundMusic", 4096, &currentSongIndex, 1, &backgroundMusicTaskHandle);
+  // 如果有后台音乐正在播放，先停止它
+  if (backgroundMusicTaskHandle != NULL)
+  {
+    vTaskDelete(backgroundMusicTaskHandle);
+    backgroundMusicTaskHandle = NULL;
+  }
+
+  currentSongIndex = songIndex;
+  // 创建一个新的后台播放任务
+  xTaskCreate(Buzzer_PlayMusic_Task, "BackgroundMusic", 4096, &currentSongIndex, 1, &backgroundMusicTaskHandle);
 }
 
-void play_song_full_ui(int songIndex) {
-    if (songIndex < 0 || songIndex >= numSongs) return;
+void play_song_full_ui(int songIndex)
+{
+  if (songIndex < 0 || songIndex >= numSongs) return;
 
-    // --- 进入播放界面 ---
-    stopBuzzerTask = false;
-    stopLedTask = false;
-    isPaused = false;
-    currentPlayMode = LIST_LOOP; // 默认播放模式
+  // --- 进入播放界面 ---
+  stopBuzzerTask = false;
+  stopLedTask = false;
+  isPaused = false;
+  currentPlayMode = LIST_LOOP; // 默认播放模式
 
-    // 创建播放和灯效任务
-    if (buzzerTaskHandle == NULL)
-    {
-      xTaskCreatePinnedToCore(Buzzer_Task, "Buzzer_Task", 4096, &songIndex, 2, &buzzerTaskHandle, 0);
+  // 创建播放和灯效任务
+  if (buzzerTaskHandle == NULL)
+  {
+    xTaskCreatePinnedToCore(Buzzer_Task, "Buzzer_Task", 4096, &songIndex, 2, &buzzerTaskHandle, 0);
+  }
+  if (ledTaskHandle == NULL)
+  {
+    xTaskCreatePinnedToCore(Led_Rainbow_Task, "Led_Rainbow_Task", 2048, NULL, 1, &ledTaskHandle, 0);
+  }
+
+  unsigned long lastScreenUpdateTime = 0;
+
+  while (true) // 播放界面的循环
+  {
+    if (g_force_exit_ui) {
+      stop_buzzer_playback();
+      g_force_exit_ui = false; // 重置标志
+      return;
     }
-    if (ledTaskHandle == NULL)
+    if (exitSubMenu || g_alarm_is_ringing)
     {
-      xTaskCreatePinnedToCore(Led_Rainbow_Task, "Led_Rainbow_Task", 2048, NULL, 1, &ledTaskHandle, 0);
+      stop_buzzer_playback();
+      return;
     }
 
-    unsigned long lastScreenUpdateTime = 0;
-    
-    while (true) // 播放界面的循环
+    if (readButtonLongPress()) // 长按停止播放并返回
     {
-      if (exitSubMenu || g_alarm_is_ringing) { 
-          stop_buzzer_playback(); 
-          return; 
-      }
-
-      if (readButtonLongPress()) // 长按停止播放并返回
-      {
-        stop_buzzer_playback();
-        return;
-      }
-
-      if (readButton()) // 短按暂停/继续
-      {
-        isPaused = !isPaused;
-        tone(BUZZER_PIN, 1000, 50);
-      }
-
-      int encoderChange = readEncoder();
-      if (encoderChange != 0) // 旋转编码器切换播放模式
-      {
-        int mode = (int) currentPlayMode;
-        mode = (mode + encoderChange + 3) % 3;
-        currentPlayMode = (PlayMode) mode;
-      }
-
-      // 定期更新屏幕
-      if (millis() - lastScreenUpdateTime > 100)
-      {
-        displayPlayingSong();
-        lastScreenUpdateTime = millis();
-      }
-
-      vTaskDelay(pdMS_TO_TICKS(20));
+      stop_buzzer_playback();
+      return;
     }
+
+    if (readButton()) // 短按暂停/继续
+    {
+      isPaused = !isPaused;
+      tone(BUZZER_PIN, 1000, 50);
+    }
+
+    int encoderChange = readEncoder();
+    if (encoderChange != 0) // 旋转编码器切换播放模式
+    {
+      int mode = (int) currentPlayMode;
+      mode = (mode + encoderChange + 3) % 3;
+      currentPlayMode = (PlayMode) mode;
+    }
+
+    // 定期更新屏幕
+    if (millis() - lastScreenUpdateTime > 100)
+    {
+      displayPlayingSong();
+      lastScreenUpdateTime = millis();
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
 }

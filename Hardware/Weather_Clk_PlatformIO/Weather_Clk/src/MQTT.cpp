@@ -39,6 +39,7 @@ extern float g_currentTemperature;
 extern float g_lux;
 extern struct PCData pcData;
 extern float esp32c3_temp;
+extern volatile bool g_force_exit_ui; // 引用在main.cpp中定义的全局UI退出标志
 
 // --- 函数前向声明 ---
 void callback(char *topic, byte *payload, unsigned int length);
@@ -251,6 +252,13 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
     else if (command_name && strcmp(command_name, "play_song") == 0)
     {
+      // 如果当前正在播放歌曲（通过检查requestedSongAction是否被占用），
+      // 则先强制退出当前的UI，以便开始新的播放。
+      if (requestedSongAction != NULL) {
+        g_force_exit_ui = true;
+        vTaskDelay(pdMS_TO_TICKS(50)); // 等待UI任务响应并退出
+      }
+
       int songIndex = paras["Song_index"];
       const char *ui_mode = paras["UI"];
 

@@ -2,7 +2,8 @@
     "pages": [
         "pages/device/device",
         "pages/led_control/led_control",
-        "pages/music_player/music_player"
+        "pages/music_player/music_player",
+        "pages/alarm_setting/alarm_setting"
     ],
     "window": {
         "backgroundTextStyle": "dark",
@@ -27,6 +28,10 @@
             {
                 "pagePath": "pages/music_player/music_player",
                 "text": "音乐播放"
+            },
+            {
+                "pagePath": "pages/alarm_setting/alarm_setting",
+                "text": "闹钟设置"
             }
         ]
     },

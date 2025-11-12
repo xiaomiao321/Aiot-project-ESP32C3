@@ -6,9 +6,9 @@
 #include "System.h"
 #include "MQTT.h" 
 
-// --- Global Action Request System ---
 volatile void (*requestedSongAction)(int) = NULL;
 volatile int requestedSongIndex = -1;
+volatile bool g_force_exit_ui = false; // 强制UI退出的全局标志
 
 /**
  * @brief 程序入口点和初始化函数
@@ -31,18 +31,19 @@ void setup()
 void loop()
 {
     // 检查是否有从后台任务（如MQTT）发起的UI操作请求
-    if (requestedSongAction != NULL) {
+    if (requestedSongAction != NULL)
+    {
         void (*action)(int) = (void (*)(int))requestedSongAction; // 复制函数指针
         int songIndex = requestedSongIndex; // 复制歌曲索引
 
         // 清除请求标志
         requestedSongAction = NULL;
         requestedSongIndex = -1;
-        
+
         action(songIndex); // 执行请求的函数 (例如 play_song_full_ui)
-        
+
         // 当阻塞的UI函数返回后，重新绘制主菜单以确保UI状态一致
-        showMenuConfig(); 
+        showMenuConfig();
     }
 
     showMenu(); // 显示和处理菜单逻辑

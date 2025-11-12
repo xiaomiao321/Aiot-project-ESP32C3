@@ -1,44 +1,47 @@
-#include <TFT_eSPI.h>
-#include <cmath>
-#include "Buzzer.h"
-#include "Alarm.h"
-#include <vector>
-#include "Watchface.h"
-#include "MQTT.h"
-#include "RotaryEncoder.h"
-#include "weather.h" 
-#include "img.h"
-#include <time.h> // For struct tm
-#include "DS18B20.h"
-#include "TargetSettings.h"
+// 包含所有必需的头文件
+#include <TFT_eSPI.h>      // TFT屏幕驱动库
+#include <cmath>           // C++数学库，用于sin, cos等函数
+#include "Buzzer.h"        // 蜂鸣器相关功能
+#include "Alarm.h"         // 闹钟相关功能
+#include <vector>          // C++标准库，用于动态数组
+#include "Watchface.h"     // 本文件的头文件
+#include "MQTT.h"          // MQTT通信功能
+#include "RotaryEncoder.h" // 旋转编码器输入处理
+#include "weather.h"       // 天气和时间同步功能
+#include "img.h"           // 图像资源
+#include <time.h>          // C标准时间库，用于tm结构体
+#include "DS18B20.h"       // DS18B20温度传感器
+#include "TargetSettings.h"// 目标设置菜单
 
-#define MENU_FONT 1
-#define WEATHER_INTERVAL_MIN 5
-#define TIME_INTERVAL_MIN 60
+// --- 宏定义 ---
+#define MENU_FONT 1 // 菜单使用的默认字体
+#define WEATHER_INTERVAL_MIN 5 // 天气数据自动更新间隔（分钟）
+#define TIME_INTERVAL_MIN 60   // 时间自动同步间隔（分钟）
 
-// --- Time and Date Colors ---
-#define TIME_MAIN_COLOR     TFT_CYAN
-#define TIME_TENTH_COLOR    TFT_WHITE
-#define DATE_WEEKDAY_COLOR  TFT_YELLOW
-#define DATE_DATE_COLOR     TFT_YELLOW
+// --- 时间和日期颜色定义 ---
+#define TIME_MAIN_COLOR     TFT_CYAN   // 时间（时分秒）主颜色
+#define TIME_TENTH_COLOR    TFT_WHITE  // 时间（毫秒/十分之一秒）颜色
+#define DATE_WEEKDAY_COLOR  TFT_YELLOW // 日期（星期）颜色
+#define DATE_DATE_COLOR     TFT_YELLOW // 日期（年月日）颜色
 
-// --- Common Elements Colors ---
-#define WEATHER_DATA_COLOR          TFT_CYAN
-#define WEATHER_REPORT_TIME_COLOR   TFT_CYAN
-#define LAST_SYNC_TIME_COLOR        TFT_CYAN
-#define LAST_SYNC_WEATHER_COLOR     TFT_YELLOW
-#define DS18B20_TEMP_COLOR          TFT_ORANGE
-#define WIFI_CONNECTED_COLOR        TFT_GREEN
-#define WIFI_DISCONNECTED_COLOR     TFT_RED
+// --- 通用UI元素颜色定义 ---
+#define WEATHER_DATA_COLOR          TFT_CYAN   // 天气数据（温湿度）颜色
+#define WEATHER_REPORT_TIME_COLOR   TFT_CYAN   // 天气数据上报时间颜色
+#define LAST_SYNC_TIME_COLOR        TFT_CYAN   // 最后NTP时间同步状态颜色
+#define LAST_SYNC_WEATHER_COLOR     TFT_YELLOW // 最后天气同步状态颜色
+#define DS18B20_TEMP_COLOR          TFT_ORANGE // DS18B20温度显示颜色
+#define WIFI_CONNECTED_COLOR        TFT_GREEN  // WiFi连接状态颜色
+#define WIFI_DISCONNECTED_COLOR     TFT_RED    // WiFi断开状态颜色
+
 // =================================================================================================
-// Forward Declarations & Menu Setup
+// 全局变量与函数前向声明
 // =================================================================================================
-extern TFT_eSPI tft;
-extern TFT_eSprite menuSprite;
-extern void showMenuConfig();
-extern char wifiStatusStr[]; // Added for WiFi status display
+extern TFT_eSPI tft;           // 外部引用的TFT屏幕对象
+extern TFT_eSprite menuSprite; // 外部引用的屏幕缓冲区(Sprite)
+extern void showMenuConfig();  // 外部函数，显示主配置菜单
+extern char wifiStatusStr[];   // 外部字符数组，用于显示WiFi状态
 
-// Forward declare all watchface functions
+// --- 所有表盘函数的静态前向声明 ---
 static void SimpleClockWatchface();
 static void VectorScanWatchface();
 static void VectorScrollWatchface();
@@ -49,7 +52,7 @@ static void WavesWatchface();
 static void NenoWatchface();
 static void BallsWatchface();
 static void SandBoxWatchface();
-static void ProgressBarWatchface(); // New watchface
+static void ProgressBarWatchface();
 static void ChargeWatchface();
 static void Cube3DWatchface();
 static void GalaxyWatchface();
@@ -58,12 +61,19 @@ static void PlaceholderWatchface();
 static void VectorScrollWatchface_SEG();
 static void VectorScanWatchface_SEG();
 
+/**
+ * @brief 定义表盘菜单项的结构体
+ */
 struct WatchfaceItem
 {
-    const char *name;
-    void (*show)();
+    const char *name; // 表盘名称
+    void (*show)();   // 指向表盘显示函数的指针
 };
 
+/**
+ * @brief 表盘菜单项数组
+ * @details 每个元素包含表盘的名称和对应的启动函数。
+ */
 const WatchfaceItem watchfaceItems[] = {
     {"Target Settings", TargetSettings_Menu},
     // {"Charge", ChargeWatchface},
@@ -84,61 +94,79 @@ const WatchfaceItem watchfaceItems[] = {
     {"Sand Box", SandBoxWatchface},
     {"3D Cube", Cube3DWatchface},
 };
+// 计算表盘总数
 const int WATCHFACE_COUNT = sizeof(watchfaceItems) / sizeof(watchfaceItems[0]);
 
-// --- Pagination for Watchface Menu ---
-const int VISIBLE_WATCHFACES = 5; // Number of watchfaces to display at once
+// --- 表盘菜单分页 ---
+const int VISIBLE_WATCHFACES = 5; // 菜单每页可见的表盘数量
 
+/**
+ * @brief 绘制表盘选择列表
+ * @param selectedIndex 当前选中的项目索引，用于高亮显示
+ * @param displayOffset 列表的滚动偏移量，用于实现分页
+ */
 static void displayWatchfaceList(int selectedIndex, int displayOffset)
 {
-    menuSprite.fillSprite(TFT_BLACK);
+    menuSprite.fillSprite(TFT_BLACK); // 清空缓冲区
     menuSprite.setTextFont(MENU_FONT);
-    menuSprite.setTextDatum(MC_DATUM);
+    menuSprite.setTextDatum(MC_DATUM); // 设置文本对齐方式为居中
     menuSprite.setTextColor(TFT_WHITE, TFT_BLACK);
     menuSprite.setTextSize(2);
-    menuSprite.drawString("Select Watchface", tft.width() / 2, 20);
+    menuSprite.drawString("Select Watchface", tft.width() / 2, 20); // 绘制标题
 
+    // 循环绘制可见的菜单项
     for (int i = 0; i < VISIBLE_WATCHFACES; i++)
     {
         int itemIndex = displayOffset + i;
-        if (itemIndex >= WATCHFACE_COUNT) break;
+        if (itemIndex >= WATCHFACE_COUNT) break; // 如果超出范围则停止
 
+        // 根据是否被选中，设置不同的大小和颜色
         menuSprite.setTextSize(itemIndex == selectedIndex ? 2 : 1);
         menuSprite.setTextColor(itemIndex == selectedIndex ? TFT_YELLOW : TFT_WHITE, TFT_BLACK);
         menuSprite.drawString(watchfaceItems[itemIndex].name, tft.width() / 2, 60 + i * 30);
     }
-    menuSprite.pushSprite(0, 0);
+    menuSprite.pushSprite(0, 0); // 将缓冲区内容推送到屏幕
 }
 
+/**
+ * @brief 表盘选择的主菜单函数
+ * @details 处理用户输入（旋转编码器、单击、长按），并导航到所选的表盘。
+ */
 void WatchfaceMenu()
 {
-    int selectedIndex = 0;
-    int displayOffset = 0;
-    unsigned long lastClickTime = 0;
-    bool singleClick = false;
+    int selectedIndex = 0;     // 当前选中的项目索引
+    int displayOffset = 0;     // 列表的滚动偏移量
+    unsigned long lastClickTime = 0; // 用于检测双击
+    bool singleClick = false;  // 单击事件标志
 
-    displayWatchfaceList(selectedIndex, displayOffset);
+    displayWatchfaceList(selectedIndex, displayOffset); // 首次进入时绘制列表
 
     while (1)
     {
+        // 检查全局退出标志
         if (exitSubMenu)
         {
-            exitSubMenu = false; // Reset flag
-            return; // Exit WatchfaceMenu
+            exitSubMenu = false; // 重置标志
+            return;
         }
-        if (g_alarm_is_ringing) { return; } // ADDED LINE
+        // 如果闹钟响起，则退出
+        if (g_alarm_is_ringing) { return; }
 
+        // 长按退出菜单
         if (readButtonLongPress())
         {
             tone(BUZZER_PIN, 1500, 100);
             return;
         }
 
+        // 读取编码器变化以滚动菜单
         int encoderChange = readEncoder();
         if (encoderChange != 0)
         {
+            // 更新选中索引，并处理循环
             selectedIndex = (selectedIndex + encoderChange + WATCHFACE_COUNT) % WATCHFACE_COUNT;
 
+            // 根据需要调整显示偏移，实现滚动效果
             if (selectedIndex < displayOffset)
             {
                 displayOffset = selectedIndex;
@@ -147,25 +175,28 @@ void WatchfaceMenu()
             {
                 displayOffset = selectedIndex - VISIBLE_WATCHFACES + 1;
             }
-            displayWatchfaceList(selectedIndex, displayOffset);
-            tone(BUZZER_PIN, 1000, 50);
+            displayWatchfaceList(selectedIndex, displayOffset); // 重绘列表
+            tone(BUZZER_PIN, 1000, 50); // 播放提示音
         }
 
+        // 读取按钮点击
         if (readButton())
         {
+            // 简单的双击检测：短时间内两次点击则进入配置菜单
             if (millis() - lastClickTime < 300) { showMenuConfig(); return; }
             lastClickTime = millis();
             singleClick = true;
         }
 
+        // 处理单击事件（在双击检测窗口超时后）
         if (singleClick && (millis() - lastClickTime > 300))
         {
             singleClick = false;
             tone(BUZZER_PIN, 2000, 50);
-            watchfaceItems[selectedIndex].show();
-            displayWatchfaceList(selectedIndex, displayOffset);
+            watchfaceItems[selectedIndex].show(); // 调用选中的表盘函数
+            displayWatchfaceList(selectedIndex, displayOffset); // 从表盘返回后，重绘菜单
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(10)); // 短暂延时，让出CPU
     }
 }
 

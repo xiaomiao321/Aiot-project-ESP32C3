@@ -7,7 +7,6 @@
   width: 100%;
 }
 
-/* 新增：消息提示栏 */
 .message-panel {
   width: 95%;
   min-height: 40rpx;
@@ -92,8 +91,6 @@ button {
   border-radius: 24rpx !important;
   font-weight: bold;
 }
-
-/* --- 新增：从设备页面迁移过来的样式 --- */
 
 /* LED 显示 */
 .led-container {

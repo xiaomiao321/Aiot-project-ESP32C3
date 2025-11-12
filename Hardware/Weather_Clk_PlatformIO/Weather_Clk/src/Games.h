@@ -21,15 +21,4 @@ void TimeChallengeGame();
  */
 void flappy_bird_game();
 
-/**
- * @brief “打砖块”游戏的入口函数。
- * @details 玩家控制一个平台左右移动，反弹小球来消除屏幕上方的所有砖块。
- */
-void breakoutGame();
-
-/**
- * @brief “躲避汽车”游戏的入口函数。
- * @details 玩家控制自己的赛车在多条车道间切换，以躲避迎面而来的其他车辆。
- */
-void carDodgerGame();
 #endif

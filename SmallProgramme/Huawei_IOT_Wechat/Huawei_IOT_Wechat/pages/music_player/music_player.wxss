@@ -1,3 +1,22 @@
+.message-panel {
+  width: 100%;
+  min-height: 40rpx;
+  background-color: #1e1e1e;
+  border-radius: 16rpx;
+  padding: 15rpx 20rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+.message-text {
+  color: #ddd;
+  font-size: 26rpx;
+  text-align: center;
+  word-break: break-all;
+}
+
 .container {
   padding: 30rpx 20rpx;
   box-sizing: border-box;

@@ -17,6 +17,7 @@ static const int num_song_colors = sizeof(song_colors) / sizeof(song_colors[0]);
 static TaskHandle_t musicLiteTaskHandle = NULL; // 音乐播放任务的句柄
 static volatile bool stopMusicLiteTask = false; // 停止任务的标志
 static volatile bool isPaused = false;          // 暂停标志
+extern volatile bool g_force_exit_ui; // 引用在main.cpp中定义的全局UI退出标志
 
 // --- UI和播放任务之间的共享状态 ---
 // 使用 volatile 关键字确保在多任务环境下变量被正确访问
@@ -297,6 +298,11 @@ void play_song_lite_ui(int songIndex) {
     unsigned long lastScreenUpdateTime = 0;
 
     while(true) {
+        if (g_force_exit_ui) {
+            stop_lite_playback();
+            g_force_exit_ui = false; // 重置标志
+            return;
+        }
         if (g_alarm_is_ringing) { stop_lite_playback(); return; }
 
         if (readButtonLongPress()) { // 长按停止播放并返回
