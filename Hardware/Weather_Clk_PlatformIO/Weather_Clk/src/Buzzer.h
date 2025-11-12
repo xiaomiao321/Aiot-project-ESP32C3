@@ -151,26 +151,6 @@ void Buzzer_Init();
 void BuzzerMenu();
 
 /**
- * @brief 通过歌曲名称查找其索引。
- * @param name 要查找的歌曲的名称。
- * @return 如果找到，返回歌曲在 `songs` 数组中的索引；如果未找到，返回-1。
- */
-int findSongIndexByName(const String &name);
-
-/**
- * @brief 设置当前要播放的歌曲。
- * @param index 要播放的歌曲在 `songs` 数组中的索引。
- * @details 此函数用于在调用 `playSpecificSong()` 之前指定歌曲。
- */
-void setSongToPlay(int index);
-
-/**
- * @brief 播放由 `setSongToPlay` 指定的歌曲。
- * @details 启动一个 `Buzzer_PlayMusic_Task` 任务来播放指定的歌曲。
- */
-void playSpecificSong();
-
-/**
  * @brief 在后台播放指定的歌曲。
  * @param songIndex 要播放的歌曲的索引。
  * @details 此函数会停止任何正在后台播放的歌曲，然后创建一个新任务来播放指定的歌曲。

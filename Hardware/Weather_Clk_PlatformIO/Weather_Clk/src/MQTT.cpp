@@ -246,15 +246,14 @@ void callback(char *topic, byte *payload, unsigned int length)
       else if (strcmp(week_str, "Thursday") == 0) days_mask = (1 << 4);
       else if (strcmp(week_str, "Friday") == 0) days_mask = (1 << 5);
       else if (strcmp(week_str, "Saturday") == 0) days_mask = (1 << 6);
-
-      // For now, update alarm at index 0
       Alarm_Update(0, hour, minute, days_mask, enabled);
     }
     else if (command_name && strcmp(command_name, "play_song") == 0)
     {
       // 如果当前正在播放歌曲（通过检查requestedSongAction是否被占用），
       // 则先强制退出当前的UI，以便开始新的播放。
-      if (requestedSongAction != NULL) {
+      if (requestedSongAction != NULL)
+      {
         g_force_exit_ui = true;
         vTaskDelay(pdMS_TO_TICKS(50)); // 等待UI任务响应并退出
       }

@@ -3,10 +3,10 @@
 
 #include <stdint.h>
 
-extern volatile bool g_alarm_is_ringing; // Make this global flag accessible
+extern volatile bool g_alarm_is_ringing;
 
-// Moved from .cpp to be public
-struct AlarmSetting {
+struct AlarmSetting
+{
   uint8_t hour;
   uint8_t minute;
   uint8_t days_of_week;
@@ -60,7 +60,7 @@ int getAlarmCount();
  * @param[out] settings 用于接收闹钟设置信息的结构体引用。
  * @return 如果索引有效，则返回true并填充settings结构体；否则返回false。
  */
-bool getAlarmInfo(int index, AlarmSetting& settings);
+bool getAlarmInfo(int index, AlarmSetting &settings);
 
 /**
  * @brief 添加或更新一个闹钟。

@@ -1,146 +1,168 @@
-#include "weather.h"
-#include "menu.h"
-#include "MQTT.h"
-#include "RotaryEncoder.h"
-#include <sys/time.h>
-#include <time.h>
-#include "Buzzer.h"
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include "img.h"
-#include "WiFiManager.h"
-#include "System.h"
-#include "Watchface.h"
-bool synced = false;
-// WiFi & Time
-const char *ssid = "xiaomiao_hotspot";
-const char *password = "xiaomiao123";
-const char *ntpServer = "ntp.aliyun.com";
-const long GMT_OFFSET_SEC = 8 * 3600;
-const int DAYLIGHT_OFFSET = 0;
+#include "weather.h"       
+#include "menu.h"          
+#include "MQTT.h"          
+#include "RotaryEncoder.h" 
+#include <sys/time.h>      
+#include <time.h>          
+#include "Buzzer.h"        
+#include <WiFi.h>          
+#include <HTTPClient.h>    
+#include "img.h"           
+#include "WiFiManager.h"   
+#include "System.h"        
+#include "Watchface.h"     
 
+bool synced = false; // 标志，指示时间是否已同步
+
+// --- WiFi 和时间同步配置 ---
+const char *ssid = "xiaomiao_hotspot"; // WiFi SSID
+const char *password = "xiaomiao123";  // WiFi 密码
+const char *ntpServer = "ntp.aliyun.com"; // NTP 服务器地址
+const long GMT_OFFSET_SEC = 8 * 3600;     // GMT时区偏移量（秒），例如北京时间为东八区，即8小时
+const int DAYLIGHT_OFFSET = 0;            // 夏令时偏移量（秒），此处为0表示不使用夏令时
+
+/**
+ * @brief WiFi连接状态枚举
+ */
 enum WiFiConnectionState
 {
-    WIFI_STATE_IDLE,
-    WIFI_STATE_CONNECTING,
-    WIFI_STATE_CONNECTED,
-    WIFI_STATE_FAILED_TEMP, // Temporary failure, will retry
-    WIFI_STATE_FAILED_PERM // Permanent failure, e.g., wrong credentials
+    WIFI_STATE_IDLE,        // 空闲状态，未尝试连接
+    WIFI_STATE_CONNECTING,  // 正在连接WiFi
+    WIFI_STATE_CONNECTED,   // WiFi已连接
+    WIFI_STATE_FAILED_TEMP, // 暂时性连接失败，将重试
+    WIFI_STATE_FAILED_PERM  // 永久性连接失败，例如密码错误，不再自动重试
 };
 
-WiFiConnectionState currentWiFiState = WIFI_STATE_IDLE;
-unsigned long wifiConnectAttemptStartMillis = 0;
-const unsigned long WIFI_CONNECT_TIMEOUT_MILLIS = 10000; // 10 seconds timeout for connection attempt
-unsigned long lastWiFiRetryMillis = 0;
-const unsigned long WIFI_RETRY_DELAY_MILLIS = 30000; // 30 seconds delay before retrying after a failure
+WiFiConnectionState currentWiFiState = WIFI_STATE_IDLE; // 当前WiFi连接状态
+unsigned long wifiConnectAttemptStartMillis = 0;        // WiFi连接尝试开始时的毫秒数
+const unsigned long WIFI_CONNECT_TIMEOUT_MILLIS = 10000; // WiFi连接尝试超时时间（10秒）
+unsigned long lastWiFiRetryMillis = 0;                  // 上次WiFi重试的毫秒数
+const unsigned long WIFI_RETRY_DELAY_MILLIS = 30000;    // WiFi连接失败后重试的延迟时间（30秒）
 
-// Global Variables
-struct tm timeinfo;
-bool wifi_connected = false;
-char temperature[10] = "N/A";
-char humidity[10] = "N/A";
-char reporttime[25] = "N/A";
-char lastSyncTimeStr[45] = "Never";
-char lastWeatherSyncStr[45] = "Never";
-char wifiStatusStr[30] = "WiFi: Disconnected"; // Added for real-time status
+// --- 全局变量 ---
+struct tm timeinfo; // 标准时间结构体，存储当前时间信息
+bool wifi_connected = false; // 标志，指示WiFi是否已连接
+char temperature[10] = "N/A"; // 存储温度字符串
+char humidity[10] = "N/A";    // 存储湿度字符串
+char reporttime[25] = "N/A";  // 存储天气报告时间字符串
+char lastSyncTimeStr[45] = "Never"; // 存储上次时间同步状态字符串
+char lastWeatherSyncStr[45] = "Never"; // 存储上次天气同步状态字符串
+char wifiStatusStr[30] = "WiFi: Disconnected"; // 存储实时WiFi状态字符串
 
-
-// UI Constants
-#define BG_COLOR TFT_BLACK
-#define TITLE_COLOR TFT_WHITE
-#define VALUE_COLOR TFT_CYAN
-#define ERROR_COLOR TFT_RED
+// --- UI 常量 ---
+#define BG_COLOR TFT_BLACK   // 背景颜色
+#define TITLE_COLOR TFT_WHITE // 标题颜色
+#define VALUE_COLOR TFT_CYAN  // 数值颜色
+#define ERROR_COLOR TFT_RED   // 错误信息颜色
 
 // Helper function from user reference
+/**
+ * @brief 从给定的字符串数据中提取指定键和结束符之间的值。
+ * @param data 包含数据的字符串。
+ * @param key 值的起始标记（不包含在返回值中）。
+ * @param end 值的结束标记（不包含在返回值中）。
+ * @return 提取到的值字符串，如果未找到则返回"N/A"。
+ */
 String getValue(String data, String key, String end)
 {
-    int start = data.indexOf(key);
-    if (start == -1) return "N/A";
-    start += key.length();
-    int endIndex = data.indexOf(end, start);
-    if (endIndex == -1) return "N/A";
-    return data.substring(start, endIndex);
+    int start = data.indexOf(key); // 查找键的起始位置
+    if (start == -1) return "N/A"; // 如果未找到键，返回"N/A"
+    start += key.length();         // 调整起始位置，跳过键本身
+    int endIndex = data.indexOf(end, start); // 从调整后的起始位置开始查找结束符
+    if (endIndex == -1) return "N/A"; // 如果未找到结束符，返回"N/A"
+    return data.substring(start, endIndex); // 提取并返回子字符串
 }
 
 // Helper for on-screen debug logging
+/**
+ * @brief 打印本地时间到串口（用于调试）。
+ * @details 尝试获取本地时间并打印，如果失败则输出错误信息。
+ */
 void printLocalTime()
 {
-    if (!getLocalTime(&timeinfo))
+    if (!getLocalTime(&timeinfo)) // 尝试获取本地时间
     {
-        Serial.printf("FAILED to obtain time");
+        Serial.printf("FAILED to obtain time"); // 如果失败，打印错误信息
         return;
     }
+    // 如果成功，时间信息已存储在全局timeinfo结构体中，此处无需额外打印
 }
 
 // Function to ensure WiFi is connected in a non-blocking way
 // Returns true if WiFi is currently connected, false otherwise.
 // Manages connection attempts internally.
+/**
+ * @brief 以非阻塞方式确保WiFi连接。
+ * @details 此函数管理WiFi连接的状态机，包括连接尝试、超时和重试逻辑。
+ *          它不会阻塞主循环，而是通过内部状态和计时器来管理连接过程。
+ * @return 如果WiFi当前已连接则返回true，否则返回false（表示正在连接或连接失败）。
+ */
 bool ensureWiFiConnected()
 {
-    // 1. If already connected, update status and return true.
+    // 1. 如果已经连接，更新状态并返回true。
     if (WiFi.status() == WL_CONNECTED)
     {
         Serial.println("WiFi connected.");
-        // Modified: Include time in status string
+        // 更新状态字符串，包含当前时间
         sprintf(wifiStatusStr, "WiFi: Connected at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-        wifi_connected = true;
-        currentWiFiState = WIFI_STATE_CONNECTED;
+        wifi_connected = true;          // 设置全局连接标志为true
+        currentWiFiState = WIFI_STATE_CONNECTED; // 更新内部状态
         return true;
     }
 
-    // 2. If not connected, manage the connection state machine.
+    // 2. 如果未连接，管理连接状态机。
     switch (currentWiFiState)
     {
     case WIFI_STATE_IDLE:
-    case WIFI_STATE_FAILED_TEMP: // If failed temporarily, try again
-        // Add retry delay check here
+    case WIFI_STATE_FAILED_TEMP: // 如果是暂时性失败，则尝试重新连接
+        // 检查是否达到重试延迟时间
         if (currentWiFiState == WIFI_STATE_FAILED_TEMP && millis() - lastWiFiRetryMillis < WIFI_RETRY_DELAY_MILLIS)
         {
-            // Modified: Include time in status string
+            // 更新状态字符串，表示即将重试
             sprintf(wifiStatusStr, "WiFi: Retrying soon at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-            return false; // Not time to retry yet
+            return false; // 未到重试时间
         }
 
         Serial.println("Initiating WiFi connection...");
-        // Modified: Include time in status string
+        // 更新状态字符串，表示正在连接
         sprintf(wifiStatusStr, "WiFi: Connecting at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(ssid, password); // Non-blocking call
-        wifiConnectAttemptStartMillis = millis();
-        lastWiFiRetryMillis = millis(); // Update last retry time
-        currentWiFiState = WIFI_STATE_CONNECTING;
-        wifi_connected = false; // Not connected yet
-        return false; // Connection in progress
+        WiFi.mode(WIFI_STA);        // 设置WiFi模式为站点模式
+        WiFi.begin(ssid, password); // 启动WiFi连接（非阻塞调用）
+        wifiConnectAttemptStartMillis = millis(); // 记录连接尝试开始时间
+        lastWiFiRetryMillis = millis();         // 更新上次重试时间
+        currentWiFiState = WIFI_STATE_CONNECTING; // 更新内部状态为正在连接
+        wifi_connected = false;                 // 全局连接标志为false
+        return false; // 连接正在进行中
 
     case WIFI_STATE_CONNECTING:
-        // Check for timeout
+        // 检查连接是否超时
         if (millis() - wifiConnectAttemptStartMillis > WIFI_CONNECT_TIMEOUT_MILLIS)
         {
             Serial.println("WiFi connection timed out.");
-            // Modified: Include time in status string
+            // 更新状态字符串，表示连接超时
             sprintf(wifiStatusStr, "WiFi: TIMEOUT at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-            WiFi.disconnect(); // Stop trying for now
-            currentWiFiState = WIFI_STATE_FAILED_TEMP; // Allow retry later
-            wifi_connected = false;
-            lastWiFiRetryMillis = millis(); // Record time of failure
+            WiFi.disconnect(); // 停止当前连接尝试
+            currentWiFiState = WIFI_STATE_FAILED_TEMP; // 设置为暂时性失败，允许稍后重试
+            wifi_connected = false;                 // 全局连接标志为false
+            lastWiFiRetryMillis = millis();         // 记录失败时间
             return false;
         }
-        // Still connecting, return false
-        // Modified: Include time in status string
-        sprintf(wifiStatusStr, "WiFi: Connecting at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec); // Keep status updated
+        // 仍在连接中，返回false
+        // 持续更新状态字符串
+        sprintf(wifiStatusStr, "WiFi: Connecting at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         wifi_connected = false;
         return false;
 
-    case WIFI_STATE_CONNECTED: // Should have been caught by the first if()
+    case WIFI_STATE_CONNECTED: // 理论上应该被第一个if()捕获
         return true;
 
-    case WIFI_STATE_FAILED_PERM: // If permanent failure, don't retry automatically
-        // Modified: Include time in status string
+    case WIFI_STATE_FAILED_PERM: // 如果是永久性失败，不自动重试
+        // 更新状态字符串，表示永久性失败
         sprintf(wifiStatusStr, "WiFi: Perm FAILED at %02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
         wifi_connected = false;
         return false;
     }
-    return false; // Should not reach here
+    return false; // 不应到达此处
 }
 
 bool connectWiFi()

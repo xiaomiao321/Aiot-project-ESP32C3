@@ -4,13 +4,13 @@
 #include "RotaryEncoder.h"
 #include <TFT_eSPI.h>
 #include "img.h"
-#include "Internet.h" // Include for the new Internet menu
-
+#include "Internet.h"
 /**
  * @brief 主菜单项结构体。
  * @details 用于定义一个菜单项，包含其名称、图标和被选中时执行的函数。
  */
-struct MenuItem {
+struct MenuItem
+{
     const char *name;              ///< 菜单项显示的名称。
     const uint16_t *image;         ///< 指向菜单项图标图像数据的指针。
     void (*action)();              ///< 当菜单项被选中时要调用的函数指针。

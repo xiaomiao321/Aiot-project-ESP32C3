@@ -29,31 +29,31 @@ void tftLog(String text, uint16_t color);
  * @brief 打印一条信息级别的日志（青色）。
  * @param text 日志文本。
  */
-void tftLogInfo(const String& text);
+void tftLogInfo(const String &text);
 
 /**
  * @brief 打印一条警告级别的日志（黄色）。
  * @param text 日志文本。
  */
-void tftLogWarning(const String& text);
+void tftLogWarning(const String &text);
 
 /**
  * @brief 打印一条错误级别的日志（红色）。
  * @param text 日志文本。
  */
-void tftLogError(const String& text);
+void tftLogError(const String &text);
 
 /**
  * @brief 打印一条成功级别的日志（绿色）。
  * @param text 日志文本。
  */
-void tftLogSuccess(const String& text);
+void tftLogSuccess(const String &text);
 
 /**
  * @brief 打印一条调试级别的日志（品红色）。
  * @param text 日志文本。
  */
-void tftLogDebug(const String& text);
+void tftLogDebug(const String &text);
 
 /**
  * @brief 打印一条带图标的日志。
@@ -61,7 +61,7 @@ void tftLogDebug(const String& text);
  * @param color 文本颜色。
  * @param icon 要显示在文本前的图标字符串（例如 "✓" 或 "✗"）。
  */
-void tftLogWithIcon(const String& text, uint16_t color, const char* icon);
+void tftLogWithIcon(const String &text, uint16_t color, const char *icon);
 
 /**
  * @brief 打印一条带进度信息的日志。
@@ -70,7 +70,7 @@ void tftLogWithIcon(const String& text, uint16_t color, const char* icon);
  * @param total 总进度。
  * @details 根据进度显示不同的状态，例如 "Loading..."、"Loading (50%)" 或 "Loading ✓"。
  */
-void tftLogProgress(const String& text, int progress, int total);
+void tftLogProgress(const String &text, int progress, int total);
 
 /**
  * @brief 清空TFT屏幕上的日志区域。

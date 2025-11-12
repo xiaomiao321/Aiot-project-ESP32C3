@@ -20,7 +20,6 @@
 #define LOGO_Y_BOTTOM  75
 #define BUFFER_SIZE    512
 
-// Combined Chart Dimensions and Position
 #define COMBINED_CHART_WIDTH    200
 #define COMBINED_CHART_HEIGHT   80
 #define COMBINED_CHART_X        20
@@ -30,12 +29,11 @@
 #define VALUE_WIDTH    100
 #define LEGEND_RADIUS  5
 #define LEGEND_TEXT_OFFSET 8
-#define LEGEND_X_START 95 // Shifted to the right
+#define LEGEND_X_START 95 
 #define LEGEND_Y_POS 110
 #define LEGEND_SPACING_WIDE 80
 #define LEGEND_LINE_HEIGHT 15
 
-// Arc display settings
 #define ARC_CPU_X 40
 #define ARC_CPU_Y 60
 #define ARC_GPU_X 120

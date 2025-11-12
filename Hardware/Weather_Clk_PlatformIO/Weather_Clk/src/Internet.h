@@ -5,30 +5,32 @@
 #include <TFT_eSPI.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include "RotaryEncoder.h" // For encoder functions
-#include "System.h" // For tftLog functions
+#include "RotaryEncoder.h" 
+#include "System.h" 
 
-// Structs to hold parsed data from each API
-
-struct SayLoveData {
+struct SayLoveData
+{
     String content;
 };
 
-struct EverydayEnglishData {
+struct EverydayEnglishData
+{
     String content;
     String note;
 };
 
-struct FortuneData {
+struct FortuneData
+{
     String sign;
     String description;
     String luckyColor;
     int luckyNumber;
-    String message; // For error/info messages like "今天已经抽过签了"
-    bool success; // To check if data was successfully retrieved
+    String message;
+    bool success;
 };
 
-struct ShiciData {
+struct ShiciData
+{
     String content;
     String author;
     String dynasty;
@@ -37,98 +39,117 @@ struct ShiciData {
     int popularity;
 };
 
-struct DuilianData {
+struct DuilianData
+{
     String content;
 };
 
-struct FxRateData {
+struct FxRateData
+{
     String money;
 };
 
-struct RandomEnWordData {
+struct RandomEnWordData
+{
     String headWord;
     String tranCn;
-    String phrases_en; // Concatenated phrases
-    String phrases_cn; // Concatenated phrases
+    String phrases_en;
+    String phrases_cn;
 };
 
-struct YiyanData {
+struct YiyanData
+{
     String hitokoto;
 };
 
-struct LzmyData {
+struct LzmyData
+{
     String saying;
     String transl;
     String source;
 };
 
-struct VerseData {
+struct VerseData
+{
     String content;
     String source;
     String author;
 };
 
-struct TianqishijuData {
+struct TianqishijuData
+{
     String content;
     String author;
     String source;
 };
 
-struct HsjzData {
+struct HsjzData
+{
     String content;
 };
 
-struct BrainTeaser {
+struct BrainTeaser
+{
     String quest;
     String result;
 };
 
-struct BrainTeaserData {
+struct BrainTeaserData
+{
     BrainTeaser teasers[3];
     int count = 0;
 };
 
-struct HealthTipData {
+struct HealthTipData
+{
     String content;
 };
 
-struct NewsItem {
+struct NewsItem
+{
     String title;
     String digest;
 };
 
-struct NewsData {
+struct NewsData
+{
     NewsItem items[5];
     int count = 0;
 };
 
-struct GitHubRepo {
+struct GitHubRepo
+{
     String name;
     String description;
     String stars;
 };
 
-struct GitHubData {
+struct GitHubData
+{
     GitHubRepo repos[10];
     int count = 0;
 };
 
-struct HistoryEvent {
+struct HistoryEvent
+{
     String title;
     String lsdate;
 };
 
-struct HistoryData {
+struct HistoryData
+{
     HistoryEvent events[20];
     int count = 0;
 };
 
-struct TenWhyData {
+struct TenWhyData
+{
     String title;
     String content;
 };
 
-struct WeatherData {
+struct WeatherData
+{
     String FeelsLikeC;
     String temp_C;
     String observation_time;
@@ -141,23 +162,25 @@ struct WeatherData {
     String windspeedKmph;
 };
 
-struct StockDayData {
+struct StockDayData
+{
     float close;
     float change_percent;
 };
 
-struct StockInfo {
+struct StockInfo
+{
     String symbol;
     StockDayData daily_data[5];
     int count;
 };
 
-struct CurrencyData {
+struct CurrencyData
+{
     String pair_name;
     float rate;
 };
 
-// Global data storage for Internet menu
 extern SayLoveData g_say_love_data;
 extern EverydayEnglishData g_everyday_english_data;
 extern FortuneData g_fortune_data;
@@ -224,7 +247,7 @@ void InternetMenuScreen();
  *  @{
  */
 
-/** @brief 获取健康小贴士。 */
+ /** @brief 获取健康小贴士。 */
 void fetchHealthTip();
 /** @brief 获取GitHub趋势项目。 */
 void fetchGitHubTrending();

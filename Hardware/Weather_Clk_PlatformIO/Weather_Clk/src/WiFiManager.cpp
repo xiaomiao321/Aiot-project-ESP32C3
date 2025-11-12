@@ -4,16 +4,14 @@
 #include <DNSServer.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
-#include "Menu.h" // For using the menuSprite for display
-#include "System.h" // For tftLog
-#include "weather.h" // For connectWiFi() fallback
+#include "Menu.h" 
+#include "System.h" 
+#include "weather.h" 
 
-// --- Objects ---
 WebServer server(80);
 DNSServer dnsServer;
 Preferences preferences;
 
-// --- Variables ---
 const char *ap_ssid = "WeatherClock_Setup";
 
 // =====================================================================================
@@ -57,13 +55,9 @@ const char *wifi_manager_html = R"rawliteral(
 </html>
 )rawliteral";
 
-// =====================================================================================
-//                                 WEB SERVER HANDLERS
-// =====================================================================================
 
 void handleRoot()
 {
-    // Scan for WiFi networks
     String wifi_list_options = "";
     int n = WiFi.scanNetworks();
     for (int i = 0; i < n; ++i)
@@ -88,13 +82,11 @@ void handleSave()
     Serial.println("SSID: " + ssid);
     Serial.println("Password: " + password);
 
-    // Save credentials to Preferences
     preferences.begin("wifi-creds", false);
     preferences.putString("ssid", ssid);
     preferences.putString("password", password);
     preferences.end();
 
-    // Display saving message
     menuSprite.fillScreen(TFT_BLACK);
     menuSprite.setTextDatum(MC_DATUM);
     menuSprite.drawString("Credentials Saved!", 120, 80);
@@ -111,28 +103,23 @@ void handleNotFound()
     server.send(302, "text/plain", "http://192.168.4.1"); // Redirect to the root page
 }
 
-// =====================================================================================
-//                                     MAIN FUNCTION
-// =====================================================================================
 
 bool connectWiFi_with_Manager()
 {
-    // If already connected, do nothing.
     if (WiFi.status() == WL_CONNECTED)
     {
-        Serial.println("DNS 1: " + WiFi.dnsIP(0).toString());
-        Serial.println("DNS 2: " + WiFi.dnsIP(1).toString());
+        // Serial.println("DNS 1: " + WiFi.dnsIP(0).toString());
+        // Serial.println("DNS 2: " + WiFi.dnsIP(1).toString());// 调试用，不再需要
         return true;
     }
     tft.fillScreen(TFT_BLACK);
     tftClearLog();
 
-    preferences.begin("wifi-creds", true); // Read-only mode first
+    preferences.begin("wifi-creds", true);
     String saved_ssid = preferences.getString("ssid", "");
     String saved_pass = preferences.getString("password", "");
     preferences.end();
 
-    // --- Try to connect with saved credentials ---
     if (saved_ssid.length() > 0)
     {
         tftLog("Found saved network:", TFT_WHITE);
@@ -150,7 +137,7 @@ bool connectWiFi_with_Manager()
         int attempts = 0;
         while (WiFi.status() != WL_CONNECTED && attempts < 10)
         {
-            tftLog("attempt " + String(attempts + 1) + " of 10", TFT_WHITE); // 5 second timeout
+            tftLog("attempt " + String(attempts + 1) + " of 10", TFT_WHITE);
             delay(2000);
             attempts++;
         }
@@ -166,17 +153,14 @@ bool connectWiFi_with_Manager()
         tftLog("Trying fallback method...", TFT_YELLOW);
         delay(2000);
 
-        // Call the fallback function from weather.cpp
         if (connectWiFi())
         {
-            // Fallback connection was successful
             tftClearLog();
             tftLog("Fallback SUCCESS!", TFT_GREEN);
             delay(1500);
             return true;
         }
         tftClearLog();
-        // If we are here, both saved credentials and fallback failed.
         tftLog("Fallback FAILED.", TFT_RED);
         delay(2000);
 
@@ -187,7 +171,7 @@ bool connectWiFi_with_Manager()
         delay(1500);
     }
 
-    // --- If connection fails, start AP mode and Config Portal ---
+    // 如果两种联网方式都失败了，重新配网
     tftClearLog();
     tftLog("Starting Config Portal...", TFT_YELLOW);
     tftLog("Please connect to AP:", TFT_WHITE);
@@ -200,16 +184,14 @@ bool connectWiFi_with_Manager()
     IPAddress myIP = WiFi.softAPIP();
     Serial.println("AP IP address: " + myIP.toString());
 
-    // Start DNS and Web server
     dnsServer.start(53, "*", myIP);
     server.on("/", handleRoot);
     server.on("/save", HTTP_POST, handleSave);
-    server.onNotFound(handleRoot); // Captive portal
+    server.onNotFound(handleRoot);
     server.begin();
 
     Serial.println("Config portal running.");
 
-    // Loop to handle web requests
     while (true)
     {
         dnsServer.processNextRequest();
@@ -217,5 +199,5 @@ bool connectWiFi_with_Manager()
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 
-    return false; // Should not be reached
+    return false;
 }

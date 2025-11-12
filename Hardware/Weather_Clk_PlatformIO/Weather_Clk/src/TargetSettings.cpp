@@ -1,11 +1,10 @@
 #include "TargetSettings.h"
 #include "RotaryEncoder.h"
 #include "Buzzer.h"
-#include "weather.h" // For timeinfo
-#include "Menu.h"    // For menuSprite
+#include "weather.h" 
+#include "Menu.h"    
 #include <EEPROM.h>
 
-// --- UI Colors ---
 #define TARGET_HIGHLIGHT_COLOR      TFT_YELLOW
 #define TARGET_SAVE_COLOR           TFT_GREEN
 #define TARGET_CANCEL_COLOR         TFT_RED
@@ -16,15 +15,12 @@
 #define TARGET_PROGRESS_BAR_OUTLINE_COLOR   TFT_WHITE
 #define TARGET_PROGRESS_BAR_FILL_COLOR      TFT_GREEN
 
-// --- Module-internal State ---
 static time_t countdownTarget;
 static ProgressBarInfo progressBar;
 static bool data_loaded = false;
 
-// --- UI State ---
 enum class EditMode { YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, SAVE, CANCEL };
 
-// --- EEPROM Data Structure ---
 struct TargetData
 {
     uint8_t magic_key;
@@ -32,7 +28,6 @@ struct TargetData
     ProgressBarInfo progressBar;
 };
 
-// --- Predefined Titles (Corrected "2nd") ---
 const char *predefined_titles[] = {
     "1st semester",
     "winter holiday",
@@ -41,23 +36,15 @@ const char *predefined_titles[] = {
 };
 const int num_predefined_titles = sizeof(predefined_titles) / sizeof(predefined_titles[0]);
 
-// =====================================================================================
-//                                 FORWARD DECLARATIONS
-// =====================================================================================
 static void saveData();
 static void loadData();
 static void drawEditScreen(const tm &time, EditMode mode, const char *menuTitle);
 static bool editDateTime(time_t &timeToEdit, const char *menuTitle);
 static void selectTitleMenu();
 
-// =====================================================================================
-//                                     IMAGE PLACEHOLDERS
-// =====================================================================================
-
 #define ICON_WIDTH 16
 #define ICON_HEIGHT 16
 
-// Placeholder 16x16 blue square for the school icon
 const uint16_t school_icon_data[ICON_WIDTH * ICON_HEIGHT] = {
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -77,7 +64,6 @@ const uint16_t school_icon_data[ICON_WIDTH * ICON_HEIGHT] = {
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
 };
 
-// Placeholder 16x16 red square for the home icon
 const uint16_t home_icon_data[ICON_WIDTH * ICON_HEIGHT] = {
  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xa0fb, 0xa0fb, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -108,9 +94,6 @@ void drawHomeIcon(TFT_eSprite *sprite, int x, int y)
 }
 
 
-// =====================================================================================
-//                                     PUBLIC API
-// =====================================================================================
 
 void TargetSettings_Init()
 {
@@ -137,8 +120,8 @@ void drawTargetElements(TFT_eSprite *sprite)
 
     time_t now;
     time(&now);
-    int y_base = sprite->height() - 80; // Start position moved down further=150
-    int line_height = 10; // Consistent line height
+    int y_base = sprite->height() - 80;
+    int line_height = 10;
     char buffer[64];
     struct tm time_info;
 
@@ -146,7 +129,6 @@ void drawTargetElements(TFT_eSprite *sprite)
     sprite->setTextFont(1);
     sprite->setTextSize(1);
 
-    // --- 1. Draw Progress Bar Time Range ---
     localtime_r(&progressBar.startTime, &time_info);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d", &time_info);
     String start_str = buffer;
@@ -157,11 +139,9 @@ void drawTargetElements(TFT_eSprite *sprite)
     sprite->setTextColor(TARGET_PROGRESS_BAR_DATE_COLOR, TFT_BLACK);
     sprite->drawString(buffer, 120, y_base);
 
-    // --- 2. Determine conditional elements ---
     bool isSemester = (strcmp(progressBar.title, "1st semester") == 0 || strcmp(progressBar.title, "2nd semester") == 0);
     const char *countdown_prefix = isSemester ? "HOME: " : "SCHOOL: ";
 
-    // --- 3. Draw Countdown ---
     double diff_seconds = difftime(countdownTarget, now);
     if (diff_seconds > 0)
     {
@@ -177,7 +157,6 @@ void drawTargetElements(TFT_eSprite *sprite)
         sprite->drawString(buffer, 120, y_base + line_height);
     }
 
-    // --- 4. Draw Progress Bar ---
     if (progressBar.endTime > progressBar.startTime)
     {
         double total_duration = difftime(progressBar.endTime, progressBar.startTime);
@@ -191,14 +170,12 @@ void drawTargetElements(TFT_eSprite *sprite)
         if (progress < 0.0f) progress = 0.0f;
         if (progress > 1.0f) progress = 1.0f;
 
-        // Draw Title & Percentage (with 4 decimal places)
         snprintf(buffer, sizeof(buffer), "%s: %.4f%%", progressBar.title, progress * 100.0f);
         sprite->setTextColor(TARGET_TEXT_COLOR, TFT_BLACK);
         sprite->drawString(buffer, 120, y_base + line_height * 2);
 
-        // Draw Bar and Icons (Bar is wider now)
         int bar_w = 180;
-        int bar_x = (sprite->width() - bar_w) / 2; // Centered
+        int bar_x = (sprite->width() - bar_w) / 2;
         int bar_y = y_base + line_height * 3 - 5;
         int bar_h = 10;
         int icon_size = 16;
@@ -207,24 +184,18 @@ void drawTargetElements(TFT_eSprite *sprite)
         sprite->drawRoundRect(bar_x, bar_y, bar_w, bar_h, 4, TARGET_PROGRESS_BAR_OUTLINE_COLOR);
         sprite->fillRoundRect(bar_x + 1, bar_y + 1, (bar_w - 2) * progress, bar_h - 2, 3, TARGET_PROGRESS_BAR_FILL_COLOR);
 
-        // Draw conditional icons
         if (isSemester)
         {
             drawSchoolIcon(sprite, bar_x - icon_size - 5, icon_y);
             drawHomeIcon(sprite, bar_x + bar_w + 5, icon_y);
         }
         else
-        { // Holiday
+        {
             drawHomeIcon(sprite, bar_x - icon_size - 5, icon_y);
             drawSchoolIcon(sprite, bar_x + bar_w + 5, icon_y);
         }
     }
 }
-
-
-// =====================================================================================
-//                                 EEPROM LOGIC
-// =====================================================================================
 
 static void loadData()
 {
@@ -256,9 +227,6 @@ static void saveData()
     EEPROM.commit();
 }
 
-// =====================================================================================
-//                                     UI LOGIC
-// =====================================================================================
 
 void TargetSettings_Menu()
 {
@@ -367,7 +335,6 @@ static bool editDateTime(time_t &timeToEdit, const char *menuTitle)
         if (encoder_value != 0)
         {
             tone(BUZZER_PIN, 1000, 20);
-            // Store original day to check for month/year roll-over
             int original_day = temp_tm.tm_mday;
 
             switch (mode)
@@ -382,19 +349,15 @@ static bool editDateTime(time_t &timeToEdit, const char *menuTitle)
             case EditMode::CANCEL: mode = EditMode::SAVE; break;
             }
 
-            // Normalize the date after changing year, month, or day
             if (mode <= EditMode::DAY)
             {
-                // If we were editing day, and the month rolled over, clamp day to the new month's max
                 if (mode == EditMode::DAY && encoder_value != 0)
                 {
-                    // Let mktime normalize month/year first
                     time_t temp_time = mktime(&temp_tm);
                     localtime_r(&temp_time, &temp_tm);
                 }
                 else
                 {
-                    // For year/month changes, just normalize
                     mktime(&temp_tm);
                 }
             }
@@ -415,7 +378,7 @@ static bool editDateTime(time_t &timeToEdit, const char *menuTitle)
             mode = static_cast<EditMode>(static_cast<int>(mode) + 1);
             if (mode > EditMode::CANCEL) mode = EditMode::YEAR;
         }
-        vTaskDelay(pdMS_TO_TICKS(5)); // Reduced delay for more sensitivity
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 

@@ -4,13 +4,10 @@
 #include <Arduino.h>
 #include "performance.h"
 
-// --- Action Request System ---
-// Used to request UI-blocking actions from a non-UI task (like MQTT callback)
-// The main loop will check these and execute the action.
 extern volatile void (*requestedSongAction)(int);
 extern volatile int requestedSongIndex;
 
-extern volatile bool exitSubMenu; 
+extern volatile bool exitSubMenu;
 
 /**
  * @brief 初始化MQTT客户端。

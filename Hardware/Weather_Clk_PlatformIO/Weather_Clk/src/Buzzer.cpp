@@ -546,7 +546,8 @@ void play_song_full_ui(int songIndex)
 
   while (true) // 播放界面的循环
   {
-    if (g_force_exit_ui) {
+    if (g_force_exit_ui)
+    {
       stop_buzzer_playback();
       g_force_exit_ui = false; // 重置标志
       return;
