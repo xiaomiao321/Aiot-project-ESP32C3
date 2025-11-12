@@ -24,7 +24,7 @@ const char *FORTUNE_API_URL = "http://whyta.cn/api/fortune?key=";
 const char *SHICI_API_URL = "http://whyta.cn/api/shici?key=";
 const char *DUILIAN_API_URL = "http://whyta.cn/api/tx/duilian?key=";
 const char *FX_RATE_API_URL = "http://whyta.cn/api/tx/fxrate?key=";
-const char *RANDOM_EN_WORD_API_URL = "http://ilovestudent.cn/api/commonApi/randomEnWord"; // No key needed
+const char *RANDOM_EN_WORD_API_URL = "http://ilovestudent.cn/api/commonApi/randomEnWord";
 const char *YIYAN_API_URL = "http://whyta.cn/api/yiyan?key=";
 const char *LZMY_API_URL = "http://whyta.cn/api/tx/lzmy?key=";
 const char *VERSE_API_URL = "http://whyta.cn/api/tx/verse?key=";
