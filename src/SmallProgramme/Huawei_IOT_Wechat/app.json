@@ -1,0 +1,40 @@
+{
+    "pages": [
+        "pages/device/device",
+        "pages/led_control/led_control",
+        "pages/music_player/music_player",
+        "pages/alarm_setting/alarm_setting"
+    ],
+    "window": {
+        "backgroundTextStyle": "dark",
+        "navigationBarBackgroundColor": "#1c1c1c",
+        "navigationBarTitleText": "华为云IOT",
+        "navigationBarTextStyle": "white"
+    },
+    "tabBar": {
+        "color": "#8a8a8a",
+        "selectedColor": "#ffffff",
+        "backgroundColor": "#1c1c1c",
+        "borderStyle": "black",
+        "list": [
+            {
+                "pagePath": "pages/device/device",
+                "text": "设备"
+            },
+            {
+                "pagePath": "pages/led_control/led_control",
+                "text": "LED控制"
+            },
+            {
+                "pagePath": "pages/music_player/music_player",
+                "text": "音乐播放"
+            },
+            {
+                "pagePath": "pages/alarm_setting/alarm_setting",
+                "text": "闹钟设置"
+            }
+        ]
+    },
+    "style": "v2",
+    "sitemapLocation": "sitemap.json"
+}

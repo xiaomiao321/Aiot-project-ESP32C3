@@ -1,0 +1,41 @@
+<view class="container">
+  <!-- 消息提示栏 -->
+  <view class="message-panel">
+    <text class="message-text">{{result}}</text>
+  </view>
+
+  <view class="setting-group">
+    <view class="setting-item">
+      <text class="label">时间设置</text>
+      <view class="time-picker-group">
+        <picker mode="time" value="{{time}}" start="00:00" end="23:59" bindchange="bindTimeChange">
+          <view class="picker">
+            {{time}}
+          </view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <view class="setting-group">
+    <view class="setting-item">
+      <text class="label">星期设置</text>
+      <picker bindchange="bindWeekChange" value="{{weekIndex}}" range="{{weekArray}}">
+        <view class="picker">
+          当前选择：{{weekArray[weekIndex]}}
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="setting-group">
+    <view class="setting-item">
+      <text class="label">是否开启</text>
+      <switch checked="{{isOn}}" bindchange="bindSwitchChange"/>
+    </view>
+  </view>
+
+  <view class="button-group">
+    <button type="primary" class="send-button" bindtap="sendCommand">发送命令</button>
+  </view>
+</view>
