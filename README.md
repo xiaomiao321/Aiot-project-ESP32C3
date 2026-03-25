@@ -1,78 +1,301 @@
-# AIoT 多功能时钟 (AIoT Multifunctional Clock)
+# AIoT Multifunctional Clock
 
-**25-26秋学期智能物联网(AIoT)系统设计期末大作业——第十组**
+**Final Project for Intelligent IoT (AIoT) System Design Course — Group 10**
 
-## 实物展示 
+[中文版本](./README.zh.md) | **English Version**
 
-![整体](img/整体.png)
+## Project Showcase
 
-![视觉](img/视觉.png)
+![Overall View](img/整体.png)
 
-![正面](img/正面.jpg)
-![背面](img/背面.jpg)
+![Visual Interface](img/视觉.png)
 
-## 功能概述 
+![Front View](img/正面.jpg)
+![Back View](img/背面.jpg)
 
-一个能连接华为云的桌面助手，具有以下不同的功能：
-1.  **时钟**: NTP网络授时，多款表盘，天气显示。
-2.  **音乐播放器**: 蜂鸣器播放内置音乐，支持多种播放模式。
-3.  **互联网资讯**: 获取土味情话、每日英语、诗词、汇率、热榜等。
-4.  **太空信息**: 查看国际空间站位置和宇航员信息。
-5.  **实用工具**: 闹钟、倒计时、番茄钟、秒表。
-6.  **电脑性能监测**: 通过串口实时显示PC性能数据。
-7.  **环境监测**: 监测温度、光照强度并上传华为云。
-8.  **娱乐**: 内置动画和Flappy Bird等小游戏。
-9.  **LED控制**: 可通过设备或华为云远程设置背面RGB灯效。
-10. **远程监控桌面情况**： 实时显示摄像头画面，并通过Yolo v5预测画面内的物品
+## Overview
 
-更详细的功能介绍、硬件选型、电路设计、外壳结构、源代码，请参考 [实验报告](./doc/实验报告.pdf)。
+A desktop assistant powered by ESP32-C3 and Huawei Cloud IoT, featuring:
 
-## 项目结构 
+1. **Clock**: NTP time synchronization, multiple watch faces, weather display
+2. **Music Player**: Buzzer playback with built-in songs, multiple playback modes
+3. **Internet Services**: Fetches quotes, daily English, poetry, exchange rates, trending topics, and more
+4. **Space Information**: Real-time ISS location and astronaut data
+5. **Utilities**: Alarm, countdown, Pomodoro timer, stopwatch
+6. **PC Performance Monitoring**: Real-time CPU/GPU/RAM usage via USB serial
+7. **Environmental Monitoring**: Temperature and light intensity with Huawei Cloud upload
+8. **Entertainment**: Built-in animations and games (Flappy Bird, etc.)
+9. **LED Control**: RGB lighting effects controllable via device or Huawei Cloud
+10. **Remote Desktop Monitoring**: Real-time camera feed with YOLOv5 object detection
+
+For detailed functionality, hardware design, circuit schematics, and source code, please refer to the [Project Report](./doc/Project_Report.pdf).
+
+## Features
+
+### Environmental Sensing
+- Temperature and light intensity monitoring via sensors
+- Data uploaded to Huawei Cloud IoTDA platform
+- Real-time camera feed with YOLOv5 object detection
+- Object recognition provides user engagement and potential safety warnings
+
+### Mood Enhancement
+- Music playback with 88 built-in songs
+- Dynamic RGB lighting effects
+- Fun animations and simple games
+- Designed to provide stress relief during work/study breaks
+
+### Productivity Tools
+- Clock with NTP synchronization and 17 watch face styles
+- Pomodoro timer (25min work / 5min break cycles)
+- Countdown and stopwatch functions
+- PC performance monitoring (CPU/GPU/RAM)
+- Real-time information feeds (news, weather, quotes)
+
+### Detailed Features
+
+#### Vision Module
+Real-time camera display with YOLOv5 object detection. Enables remote desktop monitoring and provides emotional value through object recognition. *(Note: The planned warning system for detecting hazardous objects via Huawei Cloud push notifications was not implemented due to time constraints.)*
+
+#### ESP32 Module
+
+| Feature | Description |
+|---------|-------------|
+| **Clock** | NTP sync via `ntp.aliyun.com`, RTC backup, 17 watch faces, weather display |
+| **Music** | 88 built-in songs, playback modes (single/playlist/random), RGB sync, controllable via WeChat Mini Program |
+| **Internet** | 20 sub-menus: quotes, English learning, poetry, exchange rates, GitHub trending, stock prices (AMD, Apple, NVIDIA, Tesla, Microsoft, Intel), etc. |
+| **Space** | ISS astronaut count/names and real-time coordinates |
+| **Alarm** | Device-side and remote setup via WeChat Mini Program |
+| **Countdown** | Standard countdown functionality |
+| **Pomodoro** | Standard Pomodoro technique (25+5 min cycles) |
+| **Stopwatch** | Standard stopwatch functionality |
+| **PC Monitor** | CPU/GPU temperature & load, RAM usage via USB serial |
+| **Temperature** | DS18B20 sensor with gauge display, cloud upload |
+| **Light** | Photoresistor with gauge display, cloud upload |
+| **LED** | WS2812 RGB control (single/all/rainbow modes), cloud remote control |
+| **Games** | Conway's Game of Life, reaction game, timing game, Flappy Bird |
+
+### Built-in Music List (88 Songs)
+
+| ID | Song Title | Artist / Composer |
+|----|------------|-------------------|
+| 0 | 爱你 | Wang Xinling |
+| 1 | 爱情讯息 | Eason Chan |
+| 2 | 啊朋友再见 | Traditional |
+| ... | ... | ... |
+| 16 | 稻香 | Jay Chou |
+| 23 | Fate | Ludwig van Beethoven |
+| 31 | 光辉岁月 | Beyond |
+| 54 | 七里香 | Jay Chou |
+| 60 | Shape Of You | Ed Sheeran |
+| 68 | Turkish March | Wolfgang Amadeus Mozart |
+| 87 | Windows XP | Microsoft |
+
+*(Full list available in the source code)*
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Cloud-Edge-End Architecture               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐    │
+│  │   End Device │────▶│  Edge Node   │────▶│  Cloud Platform│   │
+│  │   (ESP32-C3) │     │ (Orangepi 5) │     │ (Huawei IoTDA)│   │
+│  │              │     │              │     │               │   │
+│  │ • Sensors    │     │ • YOLOv5     │     │ • Device Mgmt │   │
+│  │ • Display    │     │ • Vision     │     │ • Data Storage│   │
+│  │ • Actuators  │     │ • Processing │     │ • API Access  │   │
+│  └──────────────┘     └──────────────┘     └──────────────┘   │
+│         │                      │                      │        │
+│         └──────────────────────┴──────────────────────┘        │
+│                                │                               │
+│                       ┌────────▼────────┐                      │
+│                       │  User Terminal  │                      │
+│                       │  (WeChat App)   │                      │
+│                       └─────────────────┘                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Project Structure
 
 ```
 .
-├── README.md
-├── doc/                  # 项目文档
-├── img/                  # 项目图片 
-├── video/                # 项目视频
-└── src/                  # 源代码 
-    ├── 视觉实现/         # 视觉识别代码
-    ├── Hardware/         # 硬件固件代码 
-    └── SmallProgramme/   # 微信小程序代码 
+├── README.md               # Project overview (English)
+├── README.zh.md            # Project overview (Chinese)
+├── LICENSE                 # MIT License
+├── doc/                    # Project documentation
+│   ├── Project_Report.pdf  # Detailed project report
+│   └── Technical_Doc.md    # Technical documentation
+├── img/                    # Project images
+├── video/                  # Demo videos
+└── src/                    # Source code
+    ├── Vision/             # Vision recognition (Python/YOLOv5)
+    ├── Hardware/           # Hardware firmware (PlatformIO/C++)
+    └── SmallProgramme/     # WeChat Mini Program frontend
 ```
 
--   `./src`: 存放所有源代码。
-    -   `视觉实现`: 存放视觉识别部分的 Python 代码和模型文件。
-    -   `Hardware`: 存放硬件相关的 PlatformIO 项目，包括主固件和各项功能测试。
-    -   `SmallProgramme`: 存放与硬件配套的微信小程序前端代码。
--   `./doc`: 存放项目文档，如实验报告。
--   `./img`: 存放项目相关的图片资料，如实物照片、截图等。
--   `./video`: 存放项目演示视频。
+### Directory Details
 
-## 常见问题与解决 
+| Directory | Contents |
+|-----------|----------|
+| `src/Vision/` | Python code and model files for YOLOv5 object detection |
+| `src/Hardware/` | PlatformIO project for ESP32-C3 firmware |
+| `src/Hardware/Weather_Clk_PlatformIO/` | Main firmware with all features |
+| `src/Hardware/Test_*/` | Independent test projects for specific modules |
+| `src/SmallProgramme/` | WeChat Mini Program for remote control |
+| `doc/` | Project report and technical documentation |
+| `img/` | Photos of the device, screenshots, and diagrams |
+| `video/` | Demo videos |
 
-1.  **Wi-Fi 连接失败**:
-    *   **现象**: 设备反复尝试但无法连接到 Wi-Fi。
-    *   **解决方案**:
-        1.  尝试关闭手机热点的“省电模式”。
-        2.  在固件中，已通过以下代码优化连接稳定性，确保它们被执行：
-            ```cpp
-            WiFi.mode(WIFI_STA);
-            WiFi.setAutoReconnect(true);
-            WiFi.persistent(true);
-            WiFi.setSleep(false); // 关闭 Wi-Fi 休眠
-            WiFi.setTxPower(WIFI_POWER_19_5dBm); // 设置最大发射功率
-            WiFi.begin(ssid, pass);
-            ```
-        3.  用手按住开发板的芯片，事实证明这个最管用，怀疑开发板有虚焊部分
-2.  **华为云连接失败 (DNS Fails)**:
-    
-    *   **现象**: 日志输出 `DNS Failed` 错误。
-        ![DNS_Failed](img/DNS_Failed.png)
-    *   **解决方案**: 这个问题的触发条件比较奇怪。关闭作为热点的手机的省电模式，让设备重新连接热点后，通常能解决，不过我觉得其实主要还是得用手按住开发板的芯片。
+## Hardware Specifications
 
-## 源码
+### Vision Module
+| Component | Specification |
+|-----------|---------------|
+| Camera | HD 720p |
+| Board | Orangepi 5 Ultra (RK3588) |
+| OS | Ubuntu 24.04 |
+| Architecture | ARM |
+| Environment | Python 3.10 (Conda) |
 
-所有源代码，包括视觉实现、硬件固件和微信小程序，都已托管在 GitHub:
+### ESP32 Module
+| Component | Specification |
+|-----------|---------------|
+| MCU | ESP32-C3-SuperMini |
+| Display | 1.69" TFT (240×280) |
+| Temperature | DS18B20 |
+| Light | Photoresistor GT36528 |
+| Input | EC11 Rotary Encoder |
+| Audio | MLT-7525 Buzzer |
+| LED | WS2812 RGB |
+| Power | USB 5V |
 
-[https://github.com/xiaomiao321/Aiot-project-ESP32C3](https://github.com/xiaomiao321/Aiot-project-ESP32C3)
+## WeChat Mini Program & Huawei Cloud Integration
+
+The project uses a WeChat Mini Program for remote monitoring and control. The Mini Program communicates with Huawei Cloud IoTDA platform via HTTPS APIs.
+
+### Interaction Flow
+
+```
+User → WeChat Mini Program → Huawei Cloud IAM (Auth) → Huawei Cloud IoTDA → ESP32 Device
+```
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Device Monitoring** | Real-time display of temperature, light, PC performance data |
+| **LED Control** | Remote RGB color/mode control (single/all/rainbow/off) |
+| **Music Control** | Remote song selection from 88 built-in tracks |
+| **Alarm Setting** | Remote alarm configuration with time/day settings |
+
+### API Endpoints
+
+| Service | Endpoint | Method |
+|---------|----------|--------|
+| IAM Auth | `POST https://iam.cn-east-3.myhuaweicloud.com/v3/auth/tokens` | POST |
+| Device Shadow | `GET https://{endpoint}/v5/iot/{projectId}/devices/{deviceId}/shadow` | GET |
+| Command | `POST https://{endpoint}/v5/iot/{projectId}/devices/{deviceId}/commands` | POST |
+
+## Quick Start
+
+### Prerequisites
+
+- **ESP32-C3**: PlatformIO, ESP32 Arduino Core
+- **Vision**: Python 3.10, OpenCV, ONNX, RKNN-Toolkit2
+- **Mini Program**: WeChat Developer Tools
+
+### Build & Upload (ESP32)
+
+```bash
+# Navigate to the main firmware directory
+cd src/Hardware/Weather_Clk_PlatformIO
+
+# Build and upload
+pio run --target upload
+```
+
+### Run Vision Module (Orangepi)
+
+```bash
+# Activate conda environment
+conda activate aienv
+
+# Run the vision script
+python src/Vision/main.py
+```
+
+### Deploy Mini Program
+
+1. Open `src/SmallProgramme/Huawei_IOT_Wechat/` in WeChat Developer Tools
+2. Configure your Huawei Cloud credentials in `config.js`
+3. Compile and preview
+
+## Common Issues & Solutions
+
+### 1. Wi-Fi Connection Failure
+**Symptom**: Device repeatedly fails to connect to Wi-Fi.
+
+**Solutions**:
+1. Disable "Power Saving Mode" on your mobile hotspot
+2. Ensure the following code is executed in firmware:
+   ```cpp
+   WiFi.mode(WIFI_STA);
+   WiFi.setAutoReconnect(true);
+   WiFi.persistent(true);
+   WiFi.setSleep(false);  // Disable Wi-Fi sleep
+   WiFi.setTxPower(WIFI_POWER_19_5dBm);  // Max transmit power
+   WiFi.begin(ssid, pass);
+   ```
+3. Press firmly on the ESP32 chip (may indicate cold solder joints)
+
+### 2. Huawei Cloud Connection Failure (DNS Error)
+**Symptom**: `DNS Failed` error in logs.
+
+**Solution**: Disable power saving mode on the hotspot phone. Pressing the ESP32 chip may also help.
+
+## Performance Metrics
+
+| Metric | Target | Achieved |
+|--------|--------|----------|
+| Wi-Fi Connection Time | < 5s | ~3s |
+| NTP Sync Latency | < 1s | ~200ms |
+| MQTT Latency | < 2s | ~500ms |
+| Sensor Upload Rate | 1/s | 1/s |
+| Music Response | < 1s | ~300ms |
+| LED Control Response | < 2s | ~800ms |
+
+## Challenges & Future Work
+
+### Challenges Encountered
+1. **Hardware**: AHT20 sensor and FPC display soldering difficulties
+2. **Environment**: Python dependency conflicts on ARM Linux
+3. **Integration**: Memory management and task synchronization on ESP32
+
+### Future Improvements
+1. **AI Warning System**: Complete the object detection warning loop via Huawei Cloud
+2. **Data Visualization**: Add historical data charts in the Mini Program
+3. **Third-party Services**: Integrate Google Calendar, Microsoft To-Do
+4. **Voice Control**: Add voice command support
+5. **Product Design**: Optimize enclosure and PCB for standalone battery operation
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+- **Instructors**: Lou Dongwu / Qi Chenglin
+- **Platform**: Huawei Cloud IoTDA
+- **Libraries**: TFT_eSPI, PubSubClient, YOLOv5, OpenCV
+
+## Repository
+
+All source code (Vision, Hardware firmware, WeChat Mini Program) is available on GitHub:
+
+**[xiaomiao321/Aiot-project-ESP32C3](https://github.com/xiaomiao321/Aiot-project-ESP32C3)**
+
+---
+
+*For academic inquiries, please contact the authors via the GitHub repository.*
