@@ -28,7 +28,7 @@ A desktop assistant powered by ESP32-C3 and Huawei Cloud IoT, featuring:
 9. **LED Control**: RGB lighting effects controllable via device or Huawei Cloud
 10. **Remote Desktop Monitoring**: Real-time camera feed with YOLOv5 object detection
 
-For detailed functionality, hardware design, circuit schematics, and source code, please refer to the [Project Report](./doc/Project_Report.pdf).
+For detailed functionality, hardware design, circuit schematics, and source code, please refer to the [Project Report](./doc/实验报告.pdf).
 
 ## Features
 
@@ -125,12 +125,11 @@ Real-time camera display with YOLOv5 object detection. Enables remote desktop mo
 ├── README.zh.md            # Project overview (Chinese)
 ├── LICENSE                 # MIT License
 ├── doc/                    # Project documentation
-│   ├── Project_Report.pdf  # Detailed project report
-│   └── Technical_Doc.md    # Technical documentation
+│   ├── 实验报告.pdf         # Detailed project report (Chinese)
+│   └── 项目技术文档.md       # Technical documentation (Chinese)
 ├── img/                    # Project images
-├── video/                  # Demo videos
 └── src/                    # Source code
-    ├── Vision/             # Vision recognition (Python/YOLOv5)
+    ├── 视觉实现/           # Vision recognition (Python/YOLOv5)
     ├── Hardware/           # Hardware firmware (PlatformIO/C++)
     └── SmallProgramme/     # WeChat Mini Program frontend
 ```
@@ -139,14 +138,13 @@ Real-time camera display with YOLOv5 object detection. Enables remote desktop mo
 
 | Directory | Contents |
 |-----------|----------|
-| `src/Vision/` | Python code and model files for YOLOv5 object detection |
+| `src/视觉实现/` | Python code and model files for YOLOv5 object detection |
 | `src/Hardware/` | PlatformIO project for ESP32-C3 firmware |
 | `src/Hardware/Weather_Clk_PlatformIO/` | Main firmware with all features |
 | `src/Hardware/Test_*/` | Independent test projects for specific modules |
 | `src/SmallProgramme/` | WeChat Mini Program for remote control |
 | `doc/` | Project report and technical documentation |
 | `img/` | Photos of the device, screenshots, and diagrams |
-| `video/` | Demo videos |
 
 ## Hardware Specifications
 
@@ -223,7 +221,7 @@ pio run --target upload
 conda activate aienv
 
 # Run the vision script
-python src/Vision/main.py
+python src/视觉实现/cv.py
 ```
 
 ### Deploy Mini Program
